@@ -69,7 +69,7 @@ export default function TeacherLoginPage() {
             </form>
             <div className="mt-4 text-center">
               <Link
-                href="/portal-selection"
+                href="/home"
                 className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
                 Back to portal selection

@@ -1,5 +1,5 @@
-import PortalSelectionPage from "./portal-selection/page";
+import HomePage from "./home/page";
 
 export default function Home() {
-  return <PortalSelectionPage />;
+  return <HomePage />;
 }

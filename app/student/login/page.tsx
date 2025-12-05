@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
 export default function StudentLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
@@ -16,6 +18,8 @@ export default function StudentLoginPage() {
     e.preventDefault();
     // TODO: Implement login logic
     console.log("Student login:", { email, password });
+    // Redirect to student dashboard after login
+    router.push("/student");
   };
 
   return (
@@ -65,7 +69,7 @@ export default function StudentLoginPage() {
             </form>
             <div className="mt-4 text-center">
               <Link
-                href="/portal-selection"
+                href="/home"
                 className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
                 Back to portal selection

@@ -3,11 +3,9 @@
 import * as React from "react";
 import {
   Calendar,
-  CheckSquare,
   FileText,
   Home,
   LogOut,
-  Users,
   Video,
 } from "lucide-react";
 import Image from "next/image";
@@ -31,37 +29,26 @@ const menuItems = [
   {
     title: "Dashboard",
     icon: Home,
-    href: "/teacher",
+    href: "/student",
   },
   {
     title: "Assignments",
     icon: FileText,
-    href: "/teacher/assignments",
+    href: "/student/assignments",
   },
   {
     title: "Schedule",
     icon: Calendar,
-    href: "/teacher/schedule",
+    href: "/student/schedule",
   },
   {
     title: "Resources",
     icon: Video,
-    href: "/teacher/resources",
-  },
-  {
-    title: "Attendance",
-    icon: CheckSquare,
-    href: "/teacher/attendance",
-  },
-  {
-    title: "Students",
-    icon: Users,
-    href: "/teacher/students",
+    href: "/student/resources",
   },
 ];
 
-
-export function AppSidebar() {
+export function StudentSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -81,7 +68,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/teacher" className="flex items-center gap-3">
+              <Link href="/student" className="flex items-center gap-3">
                 <div className="flex shrink-0 items-center justify-center">
                   <Image
                     src="/logo/tayog.svg"
@@ -126,11 +113,11 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center gap-3 px-2 py-2 group-data-[collapsible=icon]:justify-center">
               <Avatar>
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>AS</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                <p className="truncate font-semibold text-sm">John Doe</p>
-                <p className="truncate text-xs text-muted-foreground">Teacher</p>
+                <p className="truncate font-semibold text-sm">Alice Smith</p>
+                <p className="truncate text-xs text-muted-foreground">Student</p>
               </div>
             </div>
           </SidebarMenuItem>
