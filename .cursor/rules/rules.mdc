@@ -10,28 +10,26 @@ alwaysApply: true
 ## 2. Data fetching & caching
 
 - **All** data fetching, caching, and mutations must be implemented using **TanStack Query**.
-- Each domain must expose strongly-typed hooks that wrap TanStack Query (e.g., `useProjects`, `useCreateTask`, `useWorkLogs`).
+- Each domain must expose strongly-typed hooks that wrap TanStack Query (e.g., `useAssignment`, `useCreateStudent`, `useCreateSchedule`).
 - Mutations must use optimistic updates where it makes UX sense, and rollback on error.
 
 ## 3. Project structure & separation of concerns
 
 - Root-level `hooks` folder is required. Inside `hooks`, create **one subfolder per feature/domain**:
-  - `hooks/organization/`
-  - `hooks/projects/`
-  - `hooks/tasks/`
-  - `hooks/inventory/`
+  - `hooks/teacher/`
+  - `hooks/student/`
   - etc.
-- Each hook file is named for the action: `useProjects.ts`, `useCreateProject.ts`, etc.
+- Each hook file is named for the action: `useProjects.ts`, `useCreateAssignment.ts`, etc.
 - Root-level `components` folder: mirror the `hooks` structure with feature subfolders:
-  - `components/projects/ProjectCard.tsx`
-  - `components/tasks/TaskBoard.tsx`
+  - `components/teacher/TeacherCard.tsx`
+  - `components/student/StudentBoard.tsx`
 - **UI primitives** (Radix components and small shared building blocks) must live under `components/ui/`.
 
 ## 4. UI library
 
-- Use **Radix UI primitives** for all low-level interactive UI controls (modals, dropdowns, popovers, dialogs, switches, sliders).
+- Use **Shadcn UI** for all low-level interactive UI controls (modals, dropdowns, popovers, dialogs, switches, sliders).
 - Higher-level components may be composed using Radix primitives + Tailwind utilities.
-- Place Radix-based primitives under `components/ui/*` if helpful.
+- Place Shadcn components under `components/ui/*` if helpful.
 
 - Create a `lib` folder at the project root for all library and utility functions.
 
