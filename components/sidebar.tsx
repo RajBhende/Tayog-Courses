@@ -49,11 +49,6 @@ const menuItems = [
     href: "/teacher/resources",
   },
   {
-    title: "Attendance",
-    icon: CheckSquare,
-    href: "/teacher/attendance",
-  },
-  {
     title: "Students",
     icon: Users,
     href: "/teacher/students",
