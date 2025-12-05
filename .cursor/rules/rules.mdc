@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+Use only existing shadcn components, and if a component is missing, generate it using npx shadcn add or yarn shadcn add.
+
+Never use any — always use strict and proper TypeScript types.
+
+Create a folder with subfolders for each page, and keep the page’s component inside its own folder.
+
+Created validation folder at root level validation/ folder structure
