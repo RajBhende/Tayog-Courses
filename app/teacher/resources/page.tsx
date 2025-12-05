@@ -20,40 +20,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileText, Video, MoreVertical, Upload, X, Image as ImageIcon, FolderOpen, Check } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-
-interface Resource {
-  id: string;
-  title: string;
-  type: "PDF DOCUMENT" | "VIDEO CLASS";
-  icon: "pdf" | "video";
-  addedDate: string;
-}
-
-const resources: Resource[] = [
-  {
-    id: "1",
-    title: "Physics Chapter 1 Notes",
-    type: "PDF DOCUMENT",
-    icon: "pdf",
-    addedDate: "Added Today",
-  },
-  {
-    id: "2",
-    title: "Math Lecture: Limits",
-    type: "VIDEO CLASS",
-    icon: "video",
-    addedDate: "Added Today",
-  },
-];
+import { useResources } from "@/hooks/teacher/resources/useResources";
+import { useCreateResource } from "@/hooks/teacher/resources/useCreateResource";
+import { format } from "date-fns";
 
 export default function ResourcesPage() {
   const [title, setTitle] = React.useState("");
   const [type, setType] = React.useState("Note / PDF");
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [filePreview, setFilePreview] = React.useState<string | null>(null);
-  const [isUploading, setIsUploading] = React.useState(false);
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { data: resources = [], isLoading: isLoadingResources } = useResources();
+  const { mutate: createResource, isPending: isUploading } = useCreateResource();
 
   const getAcceptTypes = () => {
     switch (type) {
@@ -77,7 +56,6 @@ export default function ResourcesPage() {
     if (file) {
       setSelectedFile(file);
       setUploadSuccess(false);
-      setIsUploading(false);
       
       // Create preview based on file type
       if (file.type.startsWith("image/")) {
@@ -105,47 +83,33 @@ export default function ResourcesPage() {
       return;
     }
 
-    setIsUploading(true);
     setUploadSuccess(false);
 
-    try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("title", title.trim() || selectedFile.name);
-      formData.append("type", type);
-
-      // TODO: Replace with actual API call
-      // const response = await fetch("/api/resources/upload", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // if (!response.ok) throw new Error("Upload failed");
-
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Upload successful
-      setUploadSuccess(true);
-      
-      // Reset form after successful upload
-      setTimeout(() => {
-        setTitle("");
-        setSelectedFile(null);
-        setFilePreview(null);
-        setUploadSuccess(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-      }, 1500);
-
-      console.log("File uploaded successfully:", selectedFile.name);
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("Failed to upload file. Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
+    createResource(
+      {
+        title: title.trim() || selectedFile.name,
+        type: type as "Note / PDF" | "Video Class" | "Image",
+        file: selectedFile,
+      },
+      {
+        onSuccess: () => {
+          setUploadSuccess(true);
+          setTimeout(() => {
+            setTitle("");
+            setSelectedFile(null);
+            setFilePreview(null);
+            setUploadSuccess(false);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }, 1500);
+        },
+        onError: (error) => {
+          console.error("Error uploading file:", error);
+          alert("Failed to upload file. Please try again.");
+        },
+      }
+    );
   };
 
   const handleRemoveFile = () => {
@@ -319,60 +283,85 @@ export default function ResourcesPage() {
 
       {/* Resources Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {resources.map((resource) => (
-          <Card key={resource.id} className="relative">
-            <CardContent className="p-6">
-              {/* Three dots menu */}
-              <div className="absolute top-4 right-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
+        {isLoadingResources ? (
+          <div className="col-span-full text-center py-8 text-muted-foreground">
+            Loading resources...
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="col-span-full text-center py-8 text-muted-foreground">
+            No resources found. Upload your first resource!
+          </div>
+        ) : (
+          resources.map((resource) => {
+            const resourceTypeMap: Record<string, { icon: "pdf" | "video" | "image"; label: string }> = {
+              PDF_DOCUMENT: { icon: "pdf", label: "PDF DOCUMENT" },
+              VIDEO_CLASS: { icon: "video", label: "VIDEO CLASS" },
+              IMAGE: { icon: "image", label: "IMAGE" },
+            };
+            const typeInfo = resourceTypeMap[resource.type] || { icon: "pdf" as const, label: resource.type };
+            const isToday = new Date(resource.createdAt).toDateString() === new Date().toDateString();
+            const addedDate = isToday ? "Added Today" : format(new Date(resource.createdAt), "MMM dd, yyyy");
+
+            return (
+              <Card key={resource.id} className="relative">
+                <CardContent className="p-6">
+                  {/* Three dots menu */}
+                  <div className="absolute top-4 right-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem>Download</DropdownMenuItem>
+                        <DropdownMenuItem variant="destructive">
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Icon */}
+                  <div className="mb-4">
+                    {typeInfo.icon === "pdf" ? (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-yellow-100">
+                        <FileText className="h-6 w-6 text-amber-800" />
+                      </div>
+                    ) : typeInfo.icon === "video" ? (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-red-100">
+                        <Video className="h-6 w-6 text-red-600" />
+                      </div>
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-green-100">
+                        <ImageIcon className="h-6 w-6 text-green-600" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-lg mb-1">{resource.title}</h3>
+
+                  {/* Type */}
+                  <p className="text-xs text-muted-foreground uppercase mb-4">
+                    {typeInfo.label}
+                  </p>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <span className="text-xs text-muted-foreground">
+                      {addedDate}
+                    </span>
+                    <Button variant="link" className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                      View Content &gt;
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuItem>Download</DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive">
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Icon */}
-              <div className="mb-4">
-                {resource.icon === "pdf" ? (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-yellow-100">
-                    <FileText className="h-6 w-6 text-amber-800" />
                   </div>
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-red-100">
-                    <Video className="h-6 w-6 text-red-600" />
-                  </div>
-                )}
-              </div>
-
-              {/* Title */}
-              <h3 className="font-semibold text-lg mb-1">{resource.title}</h3>
-
-              {/* Type */}
-              <p className="text-xs text-muted-foreground uppercase mb-4">
-                {resource.type}
-              </p>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <span className="text-xs text-muted-foreground">
-                  {resource.addedDate}
-                </span>
-                <Button variant="link" className="h-auto p-0 text-blue-600 hover:text-blue-700">
-                  View Content &gt;
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
     </div>
   );

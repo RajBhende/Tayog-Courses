@@ -24,6 +24,7 @@ import {
   scheduleClassSchema,
   type ScheduleClassFormValues,
 } from "@/validation/schedule";
+import { useCreateSchedule } from "@/hooks/teacher/schedule/useCreateSchedule";
 
 interface ScheduleClassDialogProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function ScheduleClassDialog({
   open,
   onOpenChange,
 }: ScheduleClassDialogProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { mutate: createSchedule, isPending: isLoading } = useCreateSchedule();
 
   const form = useForm<ScheduleClassFormValues>({
     resolver: zodResolver(scheduleClassSchema),
@@ -56,33 +57,22 @@ export function ScheduleClassDialog({
     watchedValues.meetingLink?.toLowerCase().startsWith("https://");
 
   const onSubmit = async (values: ScheduleClassFormValues) => {
-    setIsLoading(true);
-    try {
-      console.log("Form values:", values);
-      
-      // TODO: Replace with actual API call
-      // Example API call:
-      // const response = await fetch("/api/schedule", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(values),
-      // });
-      // if (!response.ok) throw new Error("Failed to schedule class");
-      
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      // Only close dialog after successful submission
-      onOpenChange(false);
-      form.reset();
-    } catch (error) {
-      console.error("Error scheduling class:", error);
-      // TODO: Show error toast/notification
-    } finally {
-      setIsLoading(false);
-    }
+    const today = new Date().toISOString().split('T')[0];
+    createSchedule(
+      {
+        ...values,
+        time: `${today} ${values.time}`,
+      },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+          form.reset();
+        },
+        onError: (error) => {
+          console.error("Error scheduling class:", error);
+        },
+      }
+    );
   };
 
   const handleDialogOpenChange = (newOpen: boolean) => {

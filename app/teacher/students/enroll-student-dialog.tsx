@@ -23,6 +23,7 @@ import {
   enrollStudentSchema,
   type EnrollStudentFormValues,
 } from "@/validation/students";
+import { useEnrollStudent } from "@/hooks/teacher/students/useEnrollStudent";
 
 interface EnrollStudentDialogProps {
   open: boolean;
@@ -33,7 +34,7 @@ export function EnrollStudentDialog({
   open,
   onOpenChange,
 }: EnrollStudentDialogProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { mutate: enrollStudent, isPending: isLoading } = useEnrollStudent();
 
   const form = useForm<EnrollStudentFormValues>({
     resolver: zodResolver(enrollStudentSchema),
@@ -51,32 +52,15 @@ export function EnrollStudentDialog({
     watchedValues.email?.includes("@");
 
   const onSubmit = async (values: EnrollStudentFormValues) => {
-    setIsLoading(true);
-    try {
-      console.log("Form values:", values);
-
-      // TODO: Replace with actual API call
-      // const response = await fetch("/api/students/enroll", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(values),
-      // });
-      // if (!response.ok) throw new Error("Failed to enroll student");
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Only close dialog after successful submission
-      onOpenChange(false);
-      form.reset();
-    } catch (error) {
-      console.error("Error enrolling student:", error);
-      // TODO: Show error toast/notification
-    } finally {
-      setIsLoading(false);
-    }
+    enrollStudent(values, {
+      onSuccess: () => {
+        onOpenChange(false);
+        form.reset();
+      },
+      onError: (error) => {
+        console.error("Error enrolling student:", error);
+      },
+    });
   };
 
   const handleDialogOpenChange = (newOpen: boolean) => {

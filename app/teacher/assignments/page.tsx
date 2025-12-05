@@ -4,36 +4,11 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { CreateAssignmentDialog } from "./create-assignment-dialog";
 import { TeacherAssignmentCard } from "./components/teacher-assignment-card";
-
-interface Assignment {
-  id: string;
-  title: string;
-  dueDate: string;
-  attachment?: string;
-  description?: string;
-  submissions: number;
-}
-
-const assignments: Assignment[] = [
-  {
-    id: "1",
-    title: "History of Thermodynamics",
-    dueDate: "2023-11-15",
-    attachment: "thermo_guide.pdf",
-    description: "Write a 500-word essay on the laws of thermodynamics.",
-    submissions: 2,
-  },
-  {
-    id: "2",
-    title: "Calculus Worksheet 4",
-    dueDate: "2023-11-20",
-    description: "Complete all problems on pages 45-50 of your textbook.",
-    submissions: 0,
-  },
-];
+import { useAssignments } from "@/hooks/teacher/assignments/useAssignments";
 
 export default function AssignmentsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: assignments = [], isLoading } = useAssignments();
 
   return (
     <div className="space-y-6">
@@ -60,28 +35,23 @@ export default function AssignmentsPage() {
 
       {/* Assignment Cards List */}
       <div className="space-y-6">
-        {assignments.map((assignment) => (
-          <TeacherAssignmentCard
-            key={assignment.id}
-            assignment={assignment}
-            submissions={
-              assignment.submissions > 0
-                ? [
-                    {
-                      id: "1",
-                      studentName: "Alice Johnson",
-                      studentInitials: "AJ",
-                      submission:
-                        "Thermodynamics is the branch of physics that deals with heat, work, and temperature, and their relation to energy, entropy, and the physical properties of matter and radiation...",
-                      submittedFile: "thermodynamics_essay.pdf",
-                      grade: "85/100",
-                      feedback: "Good overview, but you missed the 3rd law.",
-                    },
-                  ]
-                : []
-            }
-          />
-        ))}
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading assignments...
+          </div>
+        ) : assignments.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No assignments found. Create your first assignment!
+          </div>
+        ) : (
+          assignments.map((assignment) => (
+            <TeacherAssignmentCard
+              key={assignment.id}
+              assignment={assignment}
+              submissions={[]}
+            />
+          ))
+        )}
       </div>
     </div>
   );

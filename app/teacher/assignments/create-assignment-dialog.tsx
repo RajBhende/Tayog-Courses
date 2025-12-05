@@ -7,6 +7,8 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -34,6 +36,7 @@ import {
   createAssignmentSchema,
   type CreateAssignmentFormValues,
 } from "@/validation/assignments";
+import { useCreateAssignment } from "@/hooks/teacher/assignments/useCreateAssignment";
 
 interface CreateAssignmentDialogProps {
   open: boolean;
@@ -46,7 +49,7 @@ export function CreateAssignmentDialog({
 }: CreateAssignmentDialogProps) {
   const [file, setFile] = React.useState<File | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { mutate: createAssignment, isPending: isLoading } = useCreateAssignment();
 
   const form = useForm<CreateAssignmentFormValues>({
     resolver: zodResolver(createAssignmentSchema),
@@ -65,38 +68,22 @@ export function CreateAssignmentDialog({
     watchedValues.description?.trim().length >= 20;
 
   const onSubmit = async (values: CreateAssignmentFormValues) => {
-    setIsLoading(true);
-    try {
-      console.log("Form values:", { ...values, attachment: file });
-      
-      // TODO: Replace with actual API call
-      // Example API call:
-      // const formData = new FormData();
-      // formData.append("title", values.title);
-      // formData.append("dueDate", values.dueDate);
-      // formData.append("description", values.description);
-      // if (file) {
-      //   formData.append("file", file);
-      // }
-      // const response = await fetch("/api/assignments", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // if (!response.ok) throw new Error("Failed to create assignment");
-      
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      // Only close dialog after successful submission
-      onOpenChange(false);
-      form.reset();
-      setFile(null);
-    } catch (error) {
-      console.error("Error creating assignment:", error);
-      // TODO: Show error toast/notification
-    } finally {
-      setIsLoading(false);
-    }
+    createAssignment(
+      {
+        ...values,
+        attachment: file ? file.name : undefined,
+      },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+          form.reset();
+          setFile(null);
+        },
+        onError: (error) => {
+          console.error("Error creating assignment:", error);
+        },
+      }
+    );
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -139,6 +126,9 @@ export function CreateAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogHeader>
+        <DialogTitle>Create New Assignment</DialogTitle>
+      </DialogHeader>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

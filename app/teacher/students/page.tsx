@@ -13,48 +13,11 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserPlus } from "lucide-react";
 import { EnrollStudentDialog } from "./enroll-student-dialog";
-
-interface Student {
-  id: string;
-  studentId: string;
-  name: string;
-  initials: string;
-  email: string;
-}
-
-const students: Student[] = [
-  {
-    id: "1",
-    studentId: "#001",
-    name: "Alice Johnson",
-    initials: "AJ",
-    email: "alice@example.com",
-  },
-  {
-    id: "2",
-    studentId: "#002",
-    name: "Bob Smith",
-    initials: "BS",
-    email: "bob@example.com",
-  },
-  {
-    id: "3",
-    studentId: "#003",
-    name: "Charlie Brown",
-    initials: "CB",
-    email: "charlie@example.com",
-  },
-  {
-    id: "4",
-    studentId: "#004",
-    name: "Diana Prince",
-    initials: "DP",
-    email: "diana@example.com",
-  },
-];
+import { useStudents } from "@/hooks/teacher/students/useStudents";
 
 export default function StudentsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: students = [], isLoading } = useStudents();
 
   return (
     <div className="space-y-6">
@@ -94,7 +57,13 @@ export default function StudentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  Loading students...
+                </TableCell>
+              </TableRow>
+            ) : students.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No students found.

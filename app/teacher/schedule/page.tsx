@@ -13,31 +13,12 @@ import {
 import { Plus, Clock, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScheduleClassDialog } from "./schedule-class-dialog";
-
-interface ScheduleItem {
-  id: string;
-  className: string;
-  topic: string;
-  time: string;
-}
-
-const scheduleData: ScheduleItem[] = [
-  {
-    id: "1",
-    className: "Mathematics",
-    topic: "Derivatives",
-    time: "02:00 PM",
-  },
-  {
-    id: "2",
-    className: "Physics",
-    topic: "Kinematics",
-    time: "10:00 AM",
-  },
-];
+import { useSchedules } from "@/hooks/teacher/schedule/useSchedules";
+import { format } from "date-fns";
 
 export default function SchedulePage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: scheduleData = [], isLoading } = useSchedules();
 
   return (
     <div className="space-y-6">
@@ -75,7 +56,13 @@ export default function SchedulePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {scheduleData.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  Loading schedules...
+                </TableCell>
+              </TableRow>
+            ) : scheduleData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No scheduled classes found.
@@ -92,7 +79,7 @@ export default function SchedulePage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
                         <Clock className="h-5 w-5 text-blue-600" />
                       </div>
-                      <span className="font-semibold">{item.className}</span>
+                      <span className="font-semibold">{item.subject}</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
@@ -100,13 +87,14 @@ export default function SchedulePage() {
                   </TableCell>
                   <TableCell className="py-4">
                     <Badge variant="outline" className="bg-gray-100 text-gray-700">
-                      {item.time}
+                      {format(new Date(item.time), "hh:mm a")}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => window.open(item.meetingLink, '_blank')}
                     >
                       <Video className="mr-2 h-4 w-4" />
                       Join Class
