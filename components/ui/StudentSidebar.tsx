@@ -11,6 +11,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 
 import {
   Sidebar,
@@ -49,17 +50,34 @@ const menuItems = [
   },
 ];
 
+// Helper function to get initials from name
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "U";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export function StudentSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useSidebar();
+  const { data: session } = useSession();
 
-  const handleLogout = () => {
+  const userName = session?.user?.name || "User";
+  const userRole = session?.user?.role === "TEACHER" ? "Teacher" : session?.user?.role === "STUDENT" ? "Student" : "";
+  const userInitials = getInitials(session?.user?.name);
+
+  const handleLogout = async () => {
     // Clear any stored authentication data
     if (typeof window !== "undefined") {
       localStorage.clear();
       sessionStorage.clear();
     }
+    // Sign out from next-auth
+    await nextAuthSignOut({ redirect: false });
     // Redirect to landing page
     router.push("/landing");
   };
@@ -112,11 +130,11 @@ export function StudentSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center gap-3 px-2 py-2 group-data-[collapsible=icon]:justify-center">
               <Avatar>
-                <AvatarFallback>AS</AvatarFallback>
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                <p className="truncate font-semibold text-sm">Alice Smith</p>
-                <p className="truncate text-xs text-muted-foreground">Student</p>
+                <p className="truncate font-semibold text-sm">{userName}</p>
+                <p className="truncate text-xs text-muted-foreground">{userRole}</p>
               </div>
             </div>
           </SidebarMenuItem>
