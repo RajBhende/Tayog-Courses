@@ -1,5 +1,5 @@
-import { StudentResourcesHeader } from "./components/student-resources-header";
-import { StudentResourcesGrid } from "./components/student-resources-grid";
+import { StudentResourcesHeader } from "@/components/student/StudentResourcesHeader";
+import { StudentResourcesGrid } from "@/components/student/StudentResourcesGrid";
 
 export default function StudentResourcesPage() {
   return (

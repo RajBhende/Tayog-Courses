@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
-import type { SignupFormValues } from '@/validation/auth';
+import type { SignupFormValues } from '@/validation';
 
 interface SignupResponse {
   message: string;

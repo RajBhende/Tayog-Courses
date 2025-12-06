@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SearchBar } from "@/components/search-bar";
-import { StudentSidebar } from "@/components/student-sidebar";
+import { SearchBar } from "@/components/ui/SearchBar";
+import { StudentSidebar } from "@/components/ui/StudentSidebar";
 
 export default function StudentLayout({
   children,

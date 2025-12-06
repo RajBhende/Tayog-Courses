@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/getSession";
-import { enrollStudentSchema } from "@/validation/students";
+import { enrollStudentSchema } from "@/validation";
 
 export async function GET(request: NextRequest) {
   try {

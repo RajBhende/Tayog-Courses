@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Clock, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ScheduleClassDialog } from "./schedule-class-dialog";
+import { ScheduleClassDialog } from "@/components/teacher/ScheduleClassDialog";
 import { useSchedules } from "@/hooks/teacher/schedule/useSchedules";
 import { format } from "date-fns";
 

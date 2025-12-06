@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { EnrollStudentFormValues } from '@/validation/students';
+import type { EnrollStudentFormValues } from '@/validation';
 import type { Student } from './useStudents';
 
 export function useEnrollStudent() {

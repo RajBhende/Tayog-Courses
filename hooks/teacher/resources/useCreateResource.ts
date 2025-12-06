@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { UploadResourceFormValues } from '@/validation/resources';
+import type { UploadResourceFormValues } from '@/validation';
 import type { Resource } from './useResources';
 
 export function useCreateResource() {

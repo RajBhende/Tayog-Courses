@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { ScheduleClassFormValues } from '@/validation/schedule';
+import type { ScheduleClassFormValues } from '@/validation';
 import type { Schedule } from './useSchedules';
 
 export function useCreateSchedule() {

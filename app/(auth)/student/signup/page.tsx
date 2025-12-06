@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import Link from "next/link";
-import { signupSchema, type SignupFormValues } from "@/validation/auth";
+import { signupSchema, type SignupFormValues } from "@/validation";
 import { useSignup } from "@/hooks/auth/useSignup";
 import { useState } from "react";
 

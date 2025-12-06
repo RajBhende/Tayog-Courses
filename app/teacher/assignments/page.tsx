@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { CreateAssignmentDialog } from "./create-assignment-dialog";
-import { TeacherAssignmentCard } from "./components/teacher-assignment-card";
+import { CreateAssignmentDialog } from "@/components/teacher/CreateAssignmentDialog";
+import { TeacherAssignmentCard } from "@/components/teacher/TeacherAssignmentCard";
 import { useAssignments } from "@/hooks/teacher/assignments/useAssignments";
 
 export default function AssignmentsPage() {

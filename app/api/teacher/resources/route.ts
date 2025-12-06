@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/getSession";
-import { uploadResourceSchema } from "@/validation/resources";
+import { uploadResourceSchema } from "@/validation";
 
 const RESOURCE_TYPE_MAP: Record<
   string,

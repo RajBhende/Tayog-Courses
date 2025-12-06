@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { ZodError } from 'zod';
 import prisma from '@/lib/prisma';
-import { signupApiSchema } from '@/validation/auth';
+import { signupApiSchema } from '@/validation';
 
 export async function POST(request: NextRequest) {
   try {

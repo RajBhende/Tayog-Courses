@@ -1,5 +1,5 @@
-import { StudentAssignmentsList } from "./components/student-assignments-list";
-import { StudentAssignmentsHeader } from "./components/student-assignments-header";
+import { StudentAssignmentsList } from "@/components/student/StudentAssignmentsList";
+import { StudentAssignmentsHeader } from "@/components/student/StudentAssignmentsHeader";
 
 export default function StudentAssignmentsPage() {
   return (

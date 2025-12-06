@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
-import type { CreateAssignmentFormValues } from '@/validation/assignments';
+import type { CreateAssignmentFormValues } from '@/validation';
 import type { Assignment } from './useAssignments';
 
 export function useCreateAssignment() {
