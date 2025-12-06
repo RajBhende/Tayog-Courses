@@ -13,8 +13,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const courses = await prisma.course.findMany({
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get("courseId");
+
+    if (!courseId) {
+      return NextResponse.json(
+        { success: false, error: "Course ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const course = await prisma.course.findFirst({
       where: {
+        id: courseId,
         students: {
           some: { id: user.id },
         },
@@ -26,16 +37,21 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const schedules = courses.flatMap((course) =>
-      course.scheduledClasses.map((schedule) => ({
-        success: true,
-        id: schedule.id,
-        subject: schedule.subject,
-        topic: schedule.topic,
-        time: schedule.time.toISOString(),
-        meetingLink: schedule.meetingLink,
-      }))
-    );
+    if (!course) {
+      return NextResponse.json(
+        { success: false, error: "Course not found or access denied" },
+        { status: 404 }
+      );
+    }
+
+    const schedules = course.scheduledClasses.map((schedule) => ({
+      success: true,
+      id: schedule.id,
+      subject: schedule.subject,
+      topic: schedule.topic,
+      time: schedule.time.toISOString(),
+      meetingLink: schedule.meetingLink,
+    }));
 
     return NextResponse.json(schedules);
   } catch (error: unknown) {
@@ -52,4 +68,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

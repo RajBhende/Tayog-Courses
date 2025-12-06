@@ -21,8 +21,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let course = await prisma.course.findFirst({
-      where: { teacherId: user.id },
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get("courseId");
+
+    if (!courseId) {
+      return NextResponse.json(
+        { success: false, error: "Course ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const course = await prisma.course.findFirst({
+      where: {
+        id: courseId,
+        teacherId: user.id,
+      },
     });
 
     if (!course) {
@@ -90,8 +103,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let course = await prisma.course.findFirst({
-      where: { teacherId: user.id },
+    const courseId = formData.get("courseId") as string | null;
+
+    if (!courseId) {
+      return NextResponse.json(
+        { success: false, error: "Course ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const course = await prisma.course.findFirst({
+      where: {
+        id: courseId,
+        teacherId: user.id,
+      },
     });
 
     if (!course) {
