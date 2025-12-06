@@ -51,7 +51,7 @@ export default function SchedulePage() {
             <TableRow>
               <TableHead className="w-[200px]">Class</TableHead>
               <TableHead>Topic</TableHead>
-              <TableHead className="w-[150px]">Time</TableHead>
+              <TableHead className="w-[180px]">Date & Time</TableHead>
               <TableHead className="w-[180px] text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -86,9 +86,14 @@ export default function SchedulePage() {
                     <span className="text-muted-foreground">{item.topic}</span>
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge variant="outline" className="bg-gray-100 text-gray-700">
-                      {format(new Date(item.time), "hh:mm a")}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge variant="outline" className="bg-gray-100 text-gray-700 w-fit">
+                        {format(new Date(item.time), "MMM dd, yyyy")}
+                      </Badge>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 w-fit border-blue-200">
+                        {format(new Date(item.time), "hh:mm a")}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <Button
