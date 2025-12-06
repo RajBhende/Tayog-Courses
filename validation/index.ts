@@ -40,3 +40,9 @@ export {
   type StudentDetails,
 } from "./students/student.schema";
 
+// Courses
+export {
+  createCourseSchema,
+  type CreateCourseFormValues,
+} from "./courses/course.schema";
+
