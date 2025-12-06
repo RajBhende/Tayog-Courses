@@ -1,115 +1,34 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Calendar, Users, Clock, Video } from "lucide-react";
 import { CourseSelectionDialog } from "@/components/teacher/CourseSelectionDialog";
-
-// Mock course data - will be replaced with API later
-const COURSE_DATA: Record<
-  string,
-  {
-    name: string;
-    code: string;
-    activeAssignments: number;
-    upcomingClasses: number;
-    enrolledStudents: number;
-    deadlines: Array<{ title: string; dueDate: string }>;
-    nextClass: { time: string; topic: string };
-  }
-> = {
-  "1": {
-    name: "History",
-    code: "HIST101",
-    activeAssignments: 3,
-    upcomingClasses: 2,
-    enrolledStudents: 25,
-    deadlines: [
-      { title: "World War II Essay", dueDate: "2024-12-15" },
-      { title: "Ancient Civilizations Quiz", dueDate: "2024-12-20" },
-    ],
-    nextClass: { time: "10:00 AM Today", topic: "Renaissance Period" },
-  },
-  "2": {
-    name: "Mathematics",
-    code: "MATH201",
-    activeAssignments: 5,
-    upcomingClasses: 3,
-    enrolledStudents: 30,
-    deadlines: [
-      { title: "Calculus Worksheet 4", dueDate: "2024-12-18" },
-      { title: "Linear Algebra Assignment", dueDate: "2024-12-22" },
-    ],
-    nextClass: { time: "2:00 PM Today", topic: "Differential Equations" },
-  },
-  "3": {
-    name: "Physics",
-    code: "PHYS301",
-    activeAssignments: 2,
-    upcomingClasses: 1,
-    enrolledStudents: 20,
-    deadlines: [
-      { title: "Mechanics Lab Report", dueDate: "2024-12-16" },
-      { title: "Thermodynamics Problem Set", dueDate: "2024-12-21" },
-    ],
-    nextClass: { time: "11:00 AM Today", topic: "Kinematics" },
-  },
-  "4": {
-    name: "Chemistry",
-    code: "CHEM201",
-    activeAssignments: 4,
-    upcomingClasses: 2,
-    enrolledStudents: 28,
-    deadlines: [
-      { title: "Organic Chemistry Lab", dueDate: "2024-12-17" },
-      { title: "Periodic Table Quiz", dueDate: "2024-12-19" },
-    ],
-    nextClass: { time: "9:00 AM Today", topic: "Chemical Bonding" },
-  },
-  "5": {
-    name: "English",
-    code: "ENG101",
-    activeAssignments: 3,
-    upcomingClasses: 2,
-    enrolledStudents: 22,
-    deadlines: [
-      { title: "Shakespeare Analysis Essay", dueDate: "2024-12-14" },
-      { title: "Poetry Reading Assignment", dueDate: "2024-12-23" },
-    ],
-    nextClass: { time: "1:00 PM Today", topic: "Literary Analysis" },
-  },
-  "6": {
-    name: "Computer Science",
-    code: "CS301",
-    activeAssignments: 6,
-    upcomingClasses: 4,
-    enrolledStudents: 35,
-    deadlines: [
-      { title: "Data Structures Project", dueDate: "2024-12-15" },
-      { title: "Algorithm Design Assignment", dueDate: "2024-12-20" },
-    ],
-    nextClass: { time: "3:00 PM Today", topic: "Binary Trees" },
-  },
-};
+import { useCourseStore } from "@/lib/courseStore";
+import { useAssignments } from "@/hooks/teacher/assignments/useAssignments";
+import { useStudents } from "@/hooks/teacher/students/useStudents";
+import { useSchedules } from "@/hooks/teacher/schedule/useSchedules";
 
 export default function TeacherDashboardPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const courseId = searchParams.get("course");
+  const { selectedCourse, selectedCourseId } = useCourseStore();
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: assignments = [] } = useAssignments();
+  const { data: students = [] } = useStudents();
+  const { data: schedules = [] } = useSchedules();
 
-  React.useEffect(() => {
-    // Show dialog if no course is selected
-    if (!courseId) {
-      setDialogOpen(true);
-    }
-  }, [courseId]);
+  const upcomingSchedules = schedules.filter(
+    (schedule) => new Date(schedule.time) >= new Date()
+  );
 
-  const courseData = courseId ? COURSE_DATA[courseId] : null;
+  const upcomingDeadlines = assignments
+    .filter((assignment) => new Date(assignment.dueDate) >= new Date())
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 5);
 
-  if (!courseId || !courseData) {
+  const nextClass = upcomingSchedules[0];
+
+  if (!selectedCourseId || !selectedCourse) {
     return (
       <>
         <CourseSelectionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
@@ -137,10 +56,10 @@ export default function TeacherDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Welcome back, Prof. Smith!
+              Welcome back!
             </h1>
             <p className="text-muted-foreground mt-1">
-              {courseData.name} ({courseData.code}) Dashboard
+              {selectedCourse.name} Dashboard
             </p>
           </div>
           <Button
@@ -163,7 +82,7 @@ export default function TeacherDashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-3xl font-bold">
-                    {courseData.activeAssignments}
+                    {assignments.length}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Active Assignments
@@ -181,7 +100,7 @@ export default function TeacherDashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-3xl font-bold">
-                    {courseData.upcomingClasses}
+                    {upcomingSchedules.length}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Upcoming Classes
@@ -199,7 +118,7 @@ export default function TeacherDashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-3xl font-bold">
-                    {courseData.enrolledStudents}
+                    {students.length}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Enrolled Students
@@ -221,19 +140,23 @@ export default function TeacherDashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {courseData.deadlines.map((deadline, index) => (
-                <div
-                  key={index}
-                  className="relative pl-4 border-l-2 border-red-500"
-                >
-                  <div className="space-y-1">
-                    <p className="font-semibold">{deadline.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Due: {deadline.dueDate}
-                    </p>
+              {upcomingDeadlines.length > 0 ? (
+                upcomingDeadlines.map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    className="relative pl-4 border-l-2 border-red-500"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-semibold">{assignment.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No upcoming deadlines</p>
+              )}
             </CardContent>
           </Card>
 
@@ -246,25 +169,29 @@ export default function TeacherDashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="relative bg-blue-600 rounded-lg p-6 text-white">
-                <div className="absolute top-4 right-4">
-                  <Video className="h-5 w-5 text-white/80" />
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-blue-100">
-                      {courseData.nextClass.time}
-                    </p>
+              {nextClass ? (
+                <div className="relative bg-blue-600 rounded-lg p-6 text-white">
+                  <div className="absolute top-4 right-4">
+                    <Video className="h-5 w-5 text-white/80" />
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-bold">{courseData.name}</h3>
-                    <p className="text-blue-100">{courseData.nextClass.topic}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-blue-100">
+                        {new Date(nextClass.time).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-bold">{nextClass.subject}</h3>
+                      <p className="text-blue-100">{nextClass.topic}</p>
+                    </div>
+                    <Button className="w-full bg-white text-blue-600 hover:bg-blue-50">
+                      Join Classroom
+                    </Button>
                   </div>
-                  <Button className="w-full bg-white text-blue-600 hover:bg-blue-50">
-                    Join Classroom
-                  </Button>
                 </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No upcoming classes</p>
+              )}
             </CardContent>
           </Card>
         </div>

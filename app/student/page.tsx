@@ -1,45 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import { CourseSelectionDialog } from "@/components/student/CourseSelectionDialog";
 import { StudentDashboardStats } from "@/components/student/StudentDashboardStats";
 import { StudentUpcomingDeadlines } from "@/components/student/StudentUpcomingDeadlines";
 import { StudentNextClass } from "@/components/student/StudentNextClass";
-
-// Mock course data - will be replaced with API later
-const COURSE_DATA: Record<
-  string,
-  {
-    name: string;
-    code: string;
-  }
-> = {
-  "1": { name: "History", code: "HIST101" },
-  "2": { name: "Mathematics", code: "MATH201" },
-  "3": { name: "Physics", code: "PHYS301" },
-  "4": { name: "Chemistry", code: "CHEM201" },
-  "5": { name: "English", code: "ENG101" },
-  "6": { name: "Computer Science", code: "CS301" },
-};
+import { useCourseStore } from "@/lib/courseStore";
 
 export default function StudentDashboardPage() {
-  const searchParams = useSearchParams();
-  const courseId = searchParams.get("course");
+  const { selectedCourse, selectedCourseId } = useCourseStore();
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    // Show dialog if no course is selected
-    if (!courseId) {
-      setDialogOpen(true);
-    }
-  }, [courseId]);
-
-  const courseData = courseId ? COURSE_DATA[courseId] : null;
-
-  if (!courseId || !courseData) {
+  if (!selectedCourseId || !selectedCourse) {
     return (
       <>
         <CourseSelectionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
@@ -67,10 +41,10 @@ export default function StudentDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Welcome back, Alice!
+              Welcome back!
             </h1>
             <p className="text-muted-foreground mt-1">
-              {courseData.name} ({courseData.code}) - Here is what's happening in your classroom today.
+              {selectedCourse.name} - Here is what's happening in your classroom today.
             </p>
           </div>
           <Button
@@ -84,12 +58,12 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* Summary Cards */}
-        <StudentDashboardStats courseId={courseId} />
+        <StudentDashboardStats courseId={selectedCourseId} />
 
         {/* Bottom Sections */}
         <div className="grid gap-6 md:grid-cols-2">
-          <StudentUpcomingDeadlines courseId={courseId} />
-          <StudentNextClass courseId={courseId} />
+          <StudentUpcomingDeadlines courseId={selectedCourseId} />
+          <StudentNextClass courseId={selectedCourseId} />
         </div>
       </div>
     </>

@@ -79,7 +79,7 @@ export function StudentSidebar() {
     // Sign out from next-auth
     await nextAuthSignOut({ redirect: false });
     // Redirect to landing page
-    router.push("/landing");
+    router.push("/");
   };
 
   return (

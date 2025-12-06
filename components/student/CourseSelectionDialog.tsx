@@ -9,56 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Course {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-}
-
-// Mock courses data - will be replaced with API later
-const MOCK_COURSES: Course[] = [
-  {
-    id: "1",
-    name: "History",
-    code: "HIST101",
-    description: "World History and Civilizations",
-  },
-  {
-    id: "2",
-    name: "Mathematics",
-    code: "MATH201",
-    description: "Advanced Calculus and Algebra",
-  },
-  {
-    id: "3",
-    name: "Physics",
-    code: "PHYS301",
-    description: "Mechanics and Thermodynamics",
-  },
-  {
-    id: "4",
-    name: "Chemistry",
-    code: "CHEM201",
-    description: "Organic and Inorganic Chemistry",
-  },
-  {
-    id: "5",
-    name: "English",
-    code: "ENG101",
-    description: "Literature and Composition",
-  },
-  {
-    id: "6",
-    name: "Computer Science",
-    code: "CS301",
-    description: "Data Structures and Algorithms",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/axios";
+import { useCourseStore } from "@/lib/courseStore";
+import type { Course } from "@/types";
 
 interface CourseSelectionDialogProps {
   open: boolean;
@@ -70,14 +26,30 @@ export function CourseSelectionDialog({
   onOpenChange,
 }: CourseSelectionDialogProps) {
   const router = useRouter();
-  const [selectedCourse, setSelectedCourse] = React.useState<string | null>(
-    null
-  );
+  const { setSelectedCourse, setHasShownDialog } = useCourseStore();
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
 
-  const handleCourseSelect = (courseId: string) => {
-    setSelectedCourse(courseId);
-    // Navigate to dashboard with course parameter
-    router.push(`/student?course=${courseId}`);
+  const { data: courses = [], isLoading } = useQuery<Course[]>({
+    queryKey: ["student", "courses"],
+    queryFn: async () => {
+      const response = await api.get<Array<{ success: boolean } & Course>>("/student/courses");
+      return response.data.map((course) => ({
+        id: course.id,
+        name: course.name,
+        description: course.description,
+        thumbnail: course.thumbnail,
+        teacherId: course.teacherId,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+      }));
+    },
+  });
+
+  const handleCourseSelect = (course: Course) => {
+    setSelectedCourseId(course.id);
+    setSelectedCourse(course, "STUDENT");
+    setHasShownDialog(true);
+    router.push("/student");
     onOpenChange(false);
   };
 
@@ -89,46 +61,61 @@ export function CourseSelectionDialog({
             <div className="p-2 rounded-lg bg-blue-100">
               <GraduationCap className="h-6 w-6 text-blue-600" />
             </div>
-            <DialogTitle className="text-2xl">Select Your Course</DialogTitle>
+            <div>
+              <DialogTitle className="text-2xl">Select Your Course</DialogTitle>
+              <DialogDescription>
+                Choose a course to view its dashboard and access your classes
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription>
-            Choose a course to view its dashboard and access your classes
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-2 max-h-[400px] overflow-y-auto">
-          {MOCK_COURSES.map((course) => (
-            <button
-              key={course.id}
-              onClick={() => handleCourseSelect(course.id)}
-              className={cn(
-                "w-full text-left p-4 rounded-lg border-2 transition-all hover:border-blue-500 hover:bg-blue-50",
-                selectedCourse === course.id
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 bg-white"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-purple-100 mt-1">
-                  <BookOpen className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg">{course.name}</h3>
-                    <span className="text-sm text-muted-foreground">
-                      ({course.code})
-                    </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-muted-foreground">Loading courses...</p>
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="p-4 rounded-full bg-muted">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold">No courses available</h3>
+              <p className="text-sm text-muted-foreground">
+                You haven't been enrolled in any courses yet. Please contact your teacher.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 space-y-2 max-h-[400px] overflow-y-auto">
+            {courses.map((course) => (
+              <button
+                key={course.id}
+                onClick={() => handleCourseSelect(course)}
+                className={cn(
+                  "w-full text-left p-4 rounded-lg border-2 transition-all hover:border-blue-500 hover:bg-blue-50",
+                  selectedCourseId === course.id
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-100 mt-1">
+                    <BookOpen className="h-5 w-5 text-purple-600" />
                   </div>
-                  {course.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {course.description}
-                    </p>
-                  )}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{course.name}</h3>
+                    {course.description && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {course.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
