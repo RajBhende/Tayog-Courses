@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/getSession";
+import { getS3FileUrl } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +50,9 @@ export async function GET(request: NextRequest) {
       id: resource.id,
       title: resource.title,
       type: resource.type,
-      attachment: resource.attachment,
+      attachment: resource.attachment
+        ? getS3FileUrl(resource.attachment)
+        : null,
       createdAt: resource.createdAt.toISOString(),
     }));
 

@@ -35,6 +35,7 @@ export function useCreateResource() {
       return response.data;
     },
     onSuccess: () => {
+      // Invalidate and refetch resources immediately
       queryClient.invalidateQueries({
         queryKey: ["teacher", "resources", selectedCourseId],
       });

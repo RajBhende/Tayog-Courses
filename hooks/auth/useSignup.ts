@@ -42,9 +42,9 @@ export function useSignup() {
 
         if (session?.user && session.user.role === data.user.role) {
           if (data.user.role === "TEACHER") {
-            router.push("/teacher");
+            router.push("/teacher/lobby");
           } else {
-            router.push("/student");
+            router.push("/student/lobby");
           }
           router.refresh();
         } else {

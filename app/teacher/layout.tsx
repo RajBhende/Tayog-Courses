@@ -6,7 +6,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { SearchBar } from "@/components/ui/SearchBar";
 import { AppSidebar } from "@/components/ui/TeacherSidebar";
 import { useCourseStore } from "@/lib/courseStore";
-import { CourseSelectionDialog } from "@/components/teacher/CourseSelectionDialog";
+import { useRouter } from "next/navigation";
 
 export default function TeacherLayout({
   children,
@@ -14,38 +14,28 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isLoginPage = pathname === "/teacher/login" || pathname === "/teacher/signup";
-  const { selectedCourseId, role, hasShownDialog, setHasShownDialog } = useCourseStore();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const isCoursesPage = pathname === "/teacher/courses";
+  const isLobbyPage = pathname === "/teacher/lobby";
+  const { selectedCourseId, role } = useCourseStore();
 
   useEffect(() => {
-    if (!isLoginPage && !selectedCourseId && !hasShownDialog) {
-      setDialogOpen(true);
-      setHasShownDialog(true);
+    if (!isLoginPage && !isCoursesPage && !isLobbyPage && !selectedCourseId) {
+      router.replace("/teacher/lobby");
     }
-  }, [isLoginPage, selectedCourseId, hasShownDialog, setHasShownDialog]);
+  }, [isLoginPage, isCoursesPage, isLobbyPage, selectedCourseId, router]);
 
-  if (isLoginPage) {
+  if (isLoginPage || isCoursesPage || isLobbyPage) {
     return <>{children}</>;
   }
 
   if (!selectedCourseId || role !== "TEACHER") {
-    return (
-      <>
-        <CourseSelectionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center space-y-4">
-            <p className="text-muted-foreground">Please select a course to continue</p>
-          </div>
-        </div>
-      </>
-    );
+    return null;
   }
 
   return (
-    <>
-      <CourseSelectionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-      <SidebarProvider>
+    <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6">
@@ -59,7 +49,6 @@ export default function TeacherLayout({
           </main>
         </SidebarInset>
       </SidebarProvider>
-    </>
   );
 }
 

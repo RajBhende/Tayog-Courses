@@ -18,5 +18,7 @@ export function useResources() {
       return response.data;
     },
     enabled: !!selectedCourseId,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }

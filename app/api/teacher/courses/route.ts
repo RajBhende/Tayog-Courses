@@ -17,6 +17,11 @@ export async function GET(request: NextRequest) {
 
     const courses = await prisma.course.findMany({
       where: { teacherId: user.id },
+      include: {
+        _count: {
+          select: { students: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -28,6 +33,7 @@ export async function GET(request: NextRequest) {
         description: course.description,
         thumbnail: course.thumbnail,
         teacherId: course.teacherId,
+        studentCount: course._count.students,
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
       }))

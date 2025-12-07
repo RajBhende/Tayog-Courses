@@ -33,7 +33,7 @@ const menuItems = [
   {
     title: "Dashboard",
     icon: Home,
-    href: "/teacher",
+    href: "/teacher/dashboard",
   },
   {
     title: "Assignments",
@@ -96,7 +96,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/teacher" className="flex items-center gap-3">
+              <Link href="/teacher/dashboard" className="flex items-center gap-3">
                 <div className="flex shrink-0 items-center justify-start">
                   <Image
                     src={state === "collapsed" ? "/logo/tayog.svg" : "/logo/tayoglogo.svg"}

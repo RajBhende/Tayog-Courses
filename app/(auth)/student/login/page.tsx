@@ -51,7 +51,7 @@ export default function StudentLoginPage() {
           return;
         }
 
-        router.push("/student");
+        router.push("/student/lobby");
         router.refresh();
       }
     } catch (err) {
@@ -124,7 +124,7 @@ export default function StudentLoginPage() {
                 </Link>
               </p>
               <Link
-                href="/home"
+                href="/"
                 className="text-sm text-gray-600 hover:text-gray-900 underline block"
               >
                 Back to portal selection
