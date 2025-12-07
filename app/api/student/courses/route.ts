@@ -32,8 +32,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      courses.map((course) => ({
-        success: true,
+      courses.map((course: (typeof courses)[number]) => ({        success: true,
         id: course.id,
         name: course.name,
         description: course.description,

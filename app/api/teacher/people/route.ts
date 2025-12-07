@@ -73,18 +73,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate performance for all students
-    const studentPerformance = course.students.map((student) => {
-      const studentSubmissions = course.assignments
-        .flatMap((assignment) => assignment.submissions)
-        .filter((submission) => submission.studentId === student.id);
+    const studentPerformance = course.students.map((student: NonNullable<typeof course>['students'][number]) => {
+            const studentSubmissions = course.assignments
+            .flatMap((assignment: NonNullable<typeof course>['assignments'][number]) => assignment.submissions)
+            .filter((submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => submission.studentId === student.id);
 
       const gradedSubmissions = studentSubmissions.filter(
-        (submission) => submission.feedback?.grade !== null && submission.feedback?.grade !== undefined
+        (submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => submission.feedback?.grade !== null && submission.feedback?.grade !== undefined
       );
 
       const totalGrade = gradedSubmissions.reduce(
-        (sum, submission) => sum + (submission.feedback?.grade || 0),
-        0
+        (sum: number, submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => sum + (submission.feedback?.grade || 0),        0
       );
 
       const averageGrade =
@@ -117,8 +116,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get all students for roster
-    const roster = course.students.map((student) => ({
-      id: student.id,
+    const roster = course.students.map((student: NonNullable<typeof course>['students'][number]) => ({      id: student.id,
       name: student.name,
       email: student.email,
     }));
@@ -142,8 +140,7 @@ export async function GET(request: NextRequest) {
         email: course.teacher.email,
         role: "Teacher",
       },
-      ...course.coTeachers.map((coTeacher) => ({
-        id: coTeacher.id,
+      ...course.coTeachers.map((coTeacher: NonNullable<typeof course>['coTeachers'][number]) => ({        id: coTeacher.id,
         name: coTeacher.name,
         email: coTeacher.email,
         role: "Co-Teacher",

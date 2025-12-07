@@ -60,8 +60,8 @@ export async function DELETE(
     }
 
     // Verify student is enrolled in this course
-    const student = course.students.find((s) => s.id === studentId);
-    if (!student) {
+    const student = course.students.find((s: NonNullable<typeof course>['students'][number]) => s.id === studentId);
+        if (!student) {
       return NextResponse.json(
         { success: false, error: "Student not found in this course" },
         { status: 404 }

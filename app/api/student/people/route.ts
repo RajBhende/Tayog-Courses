@@ -65,17 +65,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate performance for all students
-    const studentPerformance = course.students.map((student) => {
+    const studentPerformance = course.students.map((student: NonNullable<typeof course>['students'][number]) => {
       const studentSubmissions = course.assignments
-        .flatMap((assignment) => assignment.submissions)
-        .filter((submission) => submission.studentId === student.id);
+        .flatMap((assignment: NonNullable<typeof course>['assignments'][number]) => assignment.submissions)
+        .filter((submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => submission.studentId === student.id);
 
       const gradedSubmissions = studentSubmissions.filter(
-        (submission) => submission.feedback?.grade !== null && submission.feedback?.grade !== undefined
+        (submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => submission.feedback?.grade !== null && submission.feedback?.grade !== undefined
       );
 
       const totalGrade = gradedSubmissions.reduce(
-        (sum, submission) => sum + (submission.feedback?.grade || 0),
+        (sum: number, submission: NonNullable<typeof course>['assignments'][number]['submissions'][number]) => sum + (submission.feedback?.grade || 0),
         0
       );
 
@@ -95,15 +95,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Get current student's performance
-    const currentStudent = studentPerformance.find((s) => s.id === user.id);
-    const currentStudentAverage = currentStudent?.averageGrade || 0;
+    const currentStudent = studentPerformance.find((s: (typeof studentPerformance)[number]) => s.id === user.id);
+        const currentStudentAverage = currentStudent?.averageGrade || 0;
 
     // Get top 3 performers (excluding current student, then add current student if in top 3)
     const topPerformers = studentPerformance
-      .filter((s) => s.gradedCount > 0)
-      .sort((a, b) => b.averageGrade - a.averageGrade)
+    .filter((s: (typeof studentPerformance)[number]) => s.gradedCount > 0)
+      .sort((a: (typeof studentPerformance)[number], b: (typeof studentPerformance)[number]) => b.averageGrade - a.averageGrade)
       .slice(0, 3)
-      .map((student, index) => ({
+      .map((student: (typeof studentPerformance)[number], index: number) => ({
         rank: index + 1,
         id: student.id,
         name: student.name,

@@ -69,16 +69,16 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      assignments.map((assignment) => ({
-        success: true,
+      assignments.map((assignment: (typeof assignments)[number]) => ({
+                success: true,
         id: assignment.id,
         title: assignment.title,
         description: assignment.description,
         dueDate: assignment.dueDate.toISOString(),
         attachment: assignment.attachment,
         submissions: assignment._count.submissions,
-        studentSubmissions: assignment.submissions.map((submission) => ({
-          id: submission.id,
+        studentSubmissions: assignment.submissions.map((submission: (typeof assignments)[number]['submissions'][number]) => ({
+                    id: submission.id,
           studentId: submission.student.id,
           studentName: submission.student.name || "Unknown",
           studentEmail: submission.student.email || "",

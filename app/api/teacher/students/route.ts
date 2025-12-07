@@ -52,8 +52,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const students = course.students.map((student, index) => ({
-      success: true,
+    const students = course.students.map((student: NonNullable<typeof course>['students'][number], index: number) => ({      success: true,
       id: student.id,
       studentId: `#${String(index + 1).padStart(3, "0")}`,
       name: student.name,

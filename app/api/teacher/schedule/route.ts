@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      schedules.map((schedule) => ({
-        success: true,
+      schedules.map((schedule: (typeof schedules)[number]) => ({        success: true,
         id: schedule.id,
         subject: schedule.subject,
         topic: schedule.topic,

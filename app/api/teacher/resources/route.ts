@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      resources.map((resource) => ({
-        id: resource.id,
+      resources.map((resource: (typeof resources)[number]) => ({
+                id: resource.id,
         title: resource.title,
         type: resource.type,
         attachment: resource.attachment

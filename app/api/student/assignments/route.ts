@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const assignments = course.assignments.map((assignment) => {
-      const submission = assignment.submissions[0];
+    const courseAssignments = course.assignments;
+    const assignments = courseAssignments.map((assignment: NonNullable<typeof course>['assignments'][number]) => {            const submission = assignment.submissions[0];
       const hasSubmission = !!submission;
       const hasFeedback = !!submission?.feedback;
 

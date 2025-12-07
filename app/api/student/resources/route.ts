@@ -45,8 +45,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const resources = course.resources.map((resource) => ({
-      success: true,
+    const resources = course.resources.map((resource: NonNullable<typeof course>['resources'][number]) => ({      success: true,
       id: resource.id,
       title: resource.title,
       type: resource.type,

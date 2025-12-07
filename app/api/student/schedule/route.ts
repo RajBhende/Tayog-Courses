@@ -44,8 +44,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const schedules = course.scheduledClasses.map((schedule) => ({
-      success: true,
+    const schedules = course.scheduledClasses.map((schedule: NonNullable<typeof course>['scheduledClasses'][number]) => ({      success: true,
       id: schedule.id,
       subject: schedule.subject,
       topic: schedule.topic,

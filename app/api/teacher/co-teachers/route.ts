@@ -80,8 +80,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if teacher is already a co-teacher
     const isAlreadyCoTeacher = course.coTeachers?.some(
-      (ct) => ct.id === teacherToInvite.id
-    );
+      (ct: NonNullable<typeof course>['coTeachers'][number]) => ct.id === teacherToInvite.id    );
 
     if (isAlreadyCoTeacher) {
       return NextResponse.json(
@@ -165,8 +164,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const matchedCourse = allCourses.find((course) => {
-      const expectedCode = `TEACH-${course.name.substring(0, 4).toUpperCase()}-${course.id.slice(0, 4).toUpperCase()}`;
+    const matchedCourse = allCourses.find((course: (typeof allCourses)[number]) => {
+            const expectedCode = `TEACH-${course.name.substring(0, 4).toUpperCase()}-${course.id.slice(0, 4).toUpperCase()}`;
       return expectedCode === validatedData.teacherCode;
     });
 

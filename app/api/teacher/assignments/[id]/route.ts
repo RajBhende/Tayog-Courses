@@ -62,8 +62,7 @@ export async function GET(
     // Check if user has access to this course (main teacher or co-teacher)
     const hasAccess =
       assignment.course.teacherId === user.id ||
-      assignment.course.coTeachers.some((ct) => ct.id === user.id);
-
+      assignment.course.coTeachers.some((ct: (typeof assignment.course.coTeachers)[number]) => ct.id === user.id);
     if (!hasAccess) {
       return NextResponse.json(
         { success: false, error: "Access denied" },
@@ -79,8 +78,7 @@ export async function GET(
       dueDate: assignment.dueDate.toISOString(),
       attachment: assignment.attachment,
       submissions: assignment._count.submissions,
-      studentSubmissions: assignment.submissions.map((submission) => ({
-        id: submission.id,
+      studentSubmissions: assignment.submissions.map((submission: (typeof assignment.submissions)[number]) => ({        id: submission.id,
         studentId: submission.student.id,
         studentName: submission.student.name || "Unknown",
         studentEmail: submission.student.email || "",
