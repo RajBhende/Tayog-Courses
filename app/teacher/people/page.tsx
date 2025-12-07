@@ -28,6 +28,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 import { AddCoTeacherDialog } from "@/components/teacher/AddCoTeacherDialog";
 import { InviteCoTeacherDialog } from "@/components/teacher/InviteCoTeacherDialog";
+import type { Student } from "@/types";
 
 interface StudentPerformance {
   id: string;
