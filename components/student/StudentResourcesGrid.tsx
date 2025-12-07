@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import ImageDialogViewer from "@/components/ui/ImageDialogViewer";
 import VideoDisplay from "@/components/ui/VideoDisplay";
 import { Button } from "@/components/ui/button";
@@ -34,8 +35,20 @@ export function StudentResourcesGrid() {
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        Loading resources...
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-6 space-y-4">
+              <Skeleton className="h-12 w-12 rounded-md" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-4 w-24" />
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }

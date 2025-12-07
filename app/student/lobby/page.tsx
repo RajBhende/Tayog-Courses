@@ -3,15 +3,16 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Shield, ArrowRight } from "lucide-react";
+import { BookOpen, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 import { useCourseStore } from "@/lib/courseStore";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Navbar } from "@/components/ui/Navbar";
 import { signOut } from "next-auth/react";
 import type { Course } from "@/types";
 
@@ -25,11 +26,26 @@ interface StudentCourse extends Course {
 
 export default function StudentLobbyPage() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const { setSelectedCourse } = useCourseStore();
+  const { data: session, status } = useSession();
+  const { setSelectedCourse, clearCourse } = useCourseStore();
   const queryClient = useQueryClient();
   const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
   const [studentCode, setStudentCode] = React.useState("");
+
+  // Authentication check
+  React.useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/student/login");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user) {
+      if (session.user.role !== "STUDENT") {
+        router.push("/");
+        return;
+      }
+    }
+  }, [status, session, router]);
 
   const { data: courses = [], isLoading } = useQuery<StudentCourse[]>({
     queryKey: ["student", "courses"],
@@ -73,12 +89,17 @@ export default function StudentLobbyPage() {
   };
 
   const handleLogout = async () => {
+    // Clear course store
+    clearCourse();
+    // Clear any stored authentication data
     if (typeof window !== "undefined") {
       localStorage.clear();
       sessionStorage.clear();
     }
+    // Sign out from next-auth
     await signOut({ redirect: false });
-    router.push("/");
+    // Redirect to landing page with full page reload
+    window.location.href = "/";
   };
 
   const getUserInitials = (name: string | null | undefined): string => {
@@ -93,49 +114,41 @@ export default function StudentLobbyPage() {
   const hasCourses = courses.length > 0;
   const userName = session?.user?.name || "User";
   const userInitials = getUserInitials(session?.user?.name);
+  const userEmail = session?.user?.email;
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a student
+  if (status === "unauthenticated" || session?.user?.role !== "STUDENT") {
+    return null;
+  }
 
   return (
     <>
       {/* Header Bar */}
-      <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
-            <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
-              <div className="bg-white rounded-sm"></div>
-              <div className="bg-white rounded-sm"></div>
-              <div className="bg-white rounded-sm"></div>
-              <div className="bg-white rounded-sm"></div>
-            </div>
-          </div>
-          <span className="font-semibold text-lg">Tayog Courses</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <span className="font-semibold">{userName}</span>
-            <span className="text-sm text-gray-300">Student</span>
-          </div>
-          <Avatar className="bg-green-600">
-            <AvatarFallback className="bg-green-600 text-white">
-              {userInitials}
-            </AvatarFallback>
-          </Avatar>
-          <button
-            onClick={handleLogout}
-            className="p-2 hover:bg-slate-800 rounded transition-colors"
-            aria-label="Logout"
-          >
-            <ArrowRight className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
+      <Navbar
+        userName={userName}
+        userRole="Student"
+        userInitials={userInitials}
+        userEmail={userEmail}
+        avatarColor="green"
+        onLogout={handleLogout}
+      />
 
       {/* Main Content */}
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-gray-50 p-4 pt-8">
+        <div className="max-w-7xl mx-auto space-y-4 px-6">
           {/* Dashboard Title and Actions */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
+              <h1 className="text-3xl font-bold tracking-tight">My Courses</h1>
               <p className="text-gray-600 mt-1">Select a course to manage or view.</p>
             </div>
             <div className="flex items-center gap-3">
@@ -183,12 +196,12 @@ export default function StudentLobbyPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
                 <Card
                   key={course.id}
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-xl overflow-hidden",
+                    "cursor-pointer transition-all hover:shadow-xl overflow-hidden p-0",
                     selectedCourseId === course.id
                       ? "ring-2 ring-blue-500"
                       : ""
@@ -196,19 +209,17 @@ export default function StudentLobbyPage() {
                   onClick={() => handleCourseSelect(course)}
                 >
                   {/* Gradient Top Section */}
-                  <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 relative">
+                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 relative">
                     <div className="absolute top-4 right-4">
                       <Shield className="h-5 w-5 text-white/80" />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-white text-lg line-clamp-1">
-                        {course.name}
-                      </h3>
-                      <p className="text-white/90 text-sm">
-                        {course.name.substring(0, 4).toUpperCase()}-{course.id.slice(0, 3).toUpperCase()}
-                      </p>
-                    </div>
-                  </div>
+                    <CardTitle className="text-white text-lg line-clamp-1">
+                      {course.name}
+                    </CardTitle>
+                    <p className="text-white/90 text-sm mt-1">
+                      {course.name.substring(0, 4).toUpperCase()}-{course.id.slice(0, 3).toUpperCase()}
+                    </p>
+                  </CardHeader>
 
                   {/* White Bottom Section */}
                   <CardContent className="p-6 bg-white">

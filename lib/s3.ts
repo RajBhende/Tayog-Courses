@@ -129,6 +129,35 @@ export const uploadFile = async (file: File): Promise<string> => {
 };
 
 /**
+ * Upload assignment submission file to S3
+ * @param file - File object
+ * @returns S3 key (path) of the uploaded file in tayogcourses/assignment folder
+ */
+export const uploadAssignmentFile = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const uniqueFileName = generateUniqueFileName();
+  const extension = getFileExtension(file.type, file.name);
+  const key = `tayogcourses/assignment/${uniqueFileName}.${extension}`;
+
+  const params = {
+    Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME || "tayog.in",
+    Key: key,
+    Body: buffer,
+    ContentType: file.type,
+  };
+
+  try {
+    const command = new PutObjectCommand(params);
+    await s3Client.send(command);
+    return key;
+  } catch (error) {
+    console.error("Error uploading assignment file to S3:", error);
+    throw error;
+  }
+};
+
+/**
  * Upload PDF to S3 with custom filename
  * @param buffer - PDF file buffer
  * @param fileName - Custom file name (without extension)

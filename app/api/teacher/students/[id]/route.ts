@@ -25,8 +25,26 @@ export async function DELETE(
       );
     }
 
-    let course = await prisma.course.findFirst({
-      where: { teacherId: user.id },
+    // Get courseId from query params
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get("courseId");
+
+    if (!courseId) {
+      return NextResponse.json(
+        { success: false, error: "Course ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Find course where user is main teacher or co-teacher
+    const course = await prisma.course.findFirst({
+      where: {
+        id: courseId,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
+      },
       include: {
         students: {
           where: { id: studentId },
@@ -36,11 +54,12 @@ export async function DELETE(
 
     if (!course) {
       return NextResponse.json(
-        { success: false, error: "Course not found" },
+        { success: false, error: "Course not found or you don't have permission" },
         { status: 404 }
       );
     }
 
+    // Verify student is enrolled in this course
     const student = course.students.find((s) => s.id === studentId);
     if (!student) {
       return NextResponse.json(

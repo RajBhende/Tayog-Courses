@@ -2,29 +2,30 @@
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Calendar } from "lucide-react";
-
-// Mock course-specific stats - will be replaced with API later
-const COURSE_STATS: Record<
-  string,
-  { activeAssignments: number; upcomingClasses: number }
-> = {
-  "1": { activeAssignments: 3, upcomingClasses: 2 },
-  "2": { activeAssignments: 5, upcomingClasses: 3 },
-  "3": { activeAssignments: 2, upcomingClasses: 1 },
-  "4": { activeAssignments: 4, upcomingClasses: 2 },
-  "5": { activeAssignments: 3, upcomingClasses: 2 },
-  "6": { activeAssignments: 6, upcomingClasses: 4 },
-};
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAssignments } from "@/hooks/student/assignments/useAssignments";
+import { useSchedules } from "@/hooks/student/schedule/useSchedules";
 
 interface StudentDashboardStatsProps {
   courseId?: string | null;
 }
 
 export function StudentDashboardStats({ courseId }: StudentDashboardStatsProps) {
-  // Use mock data if courseId is provided, otherwise use default
-  const stats = courseId
-    ? COURSE_STATS[courseId] || { activeAssignments: 2, upcomingClasses: 2 }
-    : { activeAssignments: 2, upcomingClasses: 2 };
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules();
+
+  // Filter active assignments (pending status)
+  const activeAssignments = assignments.filter(
+    (a) => a.status === "pending" || a.status === "submitted"
+  );
+
+  // Filter upcoming classes (future dates)
+  const now = new Date();
+  const upcomingClasses = schedules.filter(
+    (s) => new Date(s.time) >= now
+  );
+
+  const isLoading = assignmentsLoading || schedulesLoading;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -35,9 +36,13 @@ export function StudentDashboardStats({ courseId }: StudentDashboardStatsProps) 
               <BookOpen className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">
-                {stats.activeAssignments}
-              </CardTitle>
+              {isLoading ? (
+                <Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <CardTitle className="text-3xl font-bold">
+                  {activeAssignments.length}
+                </CardTitle>
+              )}
               <p className="text-sm text-muted-foreground">Active Assignments</p>
             </div>
           </div>
@@ -51,9 +56,13 @@ export function StudentDashboardStats({ courseId }: StudentDashboardStatsProps) 
               <Calendar className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">
-                {stats.upcomingClasses}
-              </CardTitle>
+              {isLoading ? (
+                <Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <CardTitle className="text-3xl font-bold">
+                  {upcomingClasses.length}
+                </CardTitle>
+              )}
               <p className="text-sm text-muted-foreground">Upcoming Classes</p>
             </div>
           </div>

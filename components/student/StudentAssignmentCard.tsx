@@ -58,7 +58,7 @@ export function StudentAssignmentCard({
       const formData = new FormData();
       formData.append('file', selectedFile);
       try {
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/api/student/assignments/upload', {
           method: 'POST',
           body: formData,
         });
@@ -66,19 +66,21 @@ export function StudentAssignmentCard({
           const data = await response.json();
           fileUrl = data.url;
         } else {
-          fileUrl = `/uploads/${Date.now()}-${selectedFile.name}`;
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'File upload failed');
         }
       } catch (error) {
         console.error('File upload error:', error);
-        fileUrl = `/uploads/${Date.now()}-${selectedFile.name}`;
+        alert('Failed to upload file. Please try again.');
+        return;
       }
     }
 
     submitAssignment(
       {
         assignmentId: assignment.id,
-        summary: submissionText,
-        fileUrl,
+        ...(submissionText.trim() && { summary: submissionText.trim() }),
+        ...(fileUrl && { fileUrl }),
       },
       {
         onSuccess: () => {

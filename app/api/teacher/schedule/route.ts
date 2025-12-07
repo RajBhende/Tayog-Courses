@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 
@@ -36,9 +39,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get schedules for this course (created by any teacher with access to the course)
     const schedules = await prisma.scheduleClasses.findMany({
       where: {
-        teacherId: user.id,
         courseId: course.id,
       },
       orderBy: { time: "asc" },
@@ -96,7 +99,10 @@ export async function POST(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 

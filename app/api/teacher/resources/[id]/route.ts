@@ -27,12 +27,15 @@ export async function DELETE(
       );
     }
 
-    // Find the resource and verify ownership
+    // Find the resource and verify ownership (main teacher or co-teacher)
     const resource = await prisma.resources.findFirst({
       where: {
         id: resourceId,
         course: {
-          teacherId: user.id,
+          OR: [
+            { teacherId: user.id },
+            { coTeachers: { some: { id: user.id } } },
+          ],
         },
       },
     });

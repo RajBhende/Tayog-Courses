@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 
@@ -124,7 +127,10 @@ export async function POST(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 

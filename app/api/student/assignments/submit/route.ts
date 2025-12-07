@@ -6,8 +6,10 @@ import { z } from "zod";
 
 const submitAssignmentSchema = z.object({
   assignmentId: z.string().min(1, "Assignment ID is required"),
-  summary: z.string().min(1, "Summary is required"),
+  summary: z.string().optional(),
   fileUrl: z.string().optional(),
+}).refine((data) => data.summary || data.fileUrl, {
+  message: "Either summary or file must be provided",
 });
 
 export async function POST(request: NextRequest) {
@@ -67,8 +69,8 @@ export async function POST(request: NextRequest) {
 
     const submission = await prisma.submission.create({
       data: {
-        summary: validatedData.summary,
-        fileUrl: validatedData.fileUrl || null,
+        summary: validatedData.summary ?? "",
+        fileUrl: validatedData.fileUrl ?? null,
         assignmentId: validatedData.assignmentId,
         studentId: user.id,
       },

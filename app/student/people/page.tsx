@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Link2, Copy, Trophy, BarChart3 } from "lucide-react";
 import { useCourseStore } from "@/lib/courseStore";
 import { useQuery } from "@tanstack/react-query";
@@ -25,11 +27,18 @@ interface TopPerformer {
   percentage: number;
 }
 
+interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface PeopleData {
   success: boolean;
   currentStudentAverage: number;
   topPerformers: TopPerformer[];
   roster: Student[];
+  teacher: Teacher;
   shareableLink: string;
 }
 
@@ -75,8 +84,24 @@ function getRankColor(rank: number): string {
 
 export default function StudentPeoplePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { selectedCourseId, selectedCourse } = useCourseStore();
   const [copied, setCopied] = React.useState(false);
+
+  // Authentication check
+  React.useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/student/login");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user) {
+      if (session.user.role !== "STUDENT") {
+        router.push("/");
+        return;
+      }
+    }
+  }, [status, session, router]);
 
   const { data, isLoading } = useQuery<PeopleData>({
     queryKey: ["student", "people", selectedCourseId],
@@ -110,31 +135,28 @@ export default function StudentPeoplePage() {
     }
   }, [selectedCourseId, selectedCourse, router]);
 
-  if (!selectedCourseId || !selectedCourse) {
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a student
+  if (status === "unauthenticated" || session?.user?.role !== "STUDENT") {
     return null;
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">No data available</p>
-      </div>
-    );
+  if (!selectedCourseId || !selectedCourse) {
+    return null;
   }
 
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <Users className="h-8 w-8 text-blue-600" />
+      <div>
         <h1 className="text-3xl font-bold tracking-tight">
           People & Performance
         </h1>
@@ -152,21 +174,25 @@ export default function StudentPeoplePage() {
           <p className="text-sm text-muted-foreground">
             Share link to enroll students
           </p>
+          {isLoading ? (
+            <Skeleton className="h-10 w-full sm:w-48" />
+          ) : (
           <Button
             onClick={handleCopyLink}
             variant="outline"
             className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200"
+              disabled={!data?.shareableLink}
           >
             <Copy className="h-4 w-4 mr-2" />
             {copied ? "Copied!" : "Copy Shareable Link"}
           </Button>
+          )}
         </CardContent>
       </Card>
 
       {/* My Progress & Top Performers Section */}
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-blue-600" />
+        <div>
           <h2 className="text-2xl font-bold">My Progress & Top Performers</h2>
         </div>
 
@@ -179,17 +205,32 @@ export default function StudentPeoplePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {isLoading ? (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <Skeleton className="h-10 w-16" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                    <Skeleton className="h-2 w-full" />
+                  </div>
+                </>
+              ) : (
               <div className="space-y-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold">
-                    {data.currentStudentAverage}
+                      {data?.currentStudentAverage ?? 0}
                   </span>
                   <span className="text-lg text-muted-foreground">
                     / 100 avg
                   </span>
                 </div>
-                <Progress value={data.currentStudentAverage} className="h-2" />
+                  <Progress
+                    value={data?.currentStudentAverage ?? 0}
+                    className="h-2"
+                  />
               </div>
+              )}
             </CardContent>
           </Card>
 
@@ -202,12 +243,23 @@ export default function StudentPeoplePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Hardcoded top 3 performers - will be replaced with backend data later */}
-              {[
-                { rank: 1, name: "Hermione Granger", percentage: 99, id: "1" },
-                { rank: 2, name: "Draco Malfoy", percentage: 94, id: "2" },
-                { rank: 3, name: "Harry Potter", percentage: 85, id: "3" },
-              ].map((performer) => (
+              {isLoading ? (
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 p-2 rounded-lg"
+                    >
+                      <Skeleton className="h-6 w-6 rounded-full" />
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-4 flex-1" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))}
+                </>
+              ) : data?.topPerformers && data.topPerformers.length > 0 ? (
+                <>
+                  {data.topPerformers.map((performer) => (
                 <div
                   key={performer.id}
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
@@ -239,41 +291,59 @@ export default function StudentPeoplePage() {
               <p className="text-xs text-center text-muted-foreground pt-2">
                 Only top 3 students are visible to class.
               </p>
+                </>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground py-4">
+                  No performance data available yet.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Class Co-Teacher Section */}
+      {/* Class Teacher Section */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Class Co-Teacher</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {data.roster.map((student) => (
-            <Card
-              key={student.id}
-              className="cursor-pointer transition-all hover:shadow-md"
-            >
+        <h2 className="text-2xl font-bold">Class Teacher</h2>
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3">
-                  <Avatar
-                    className={`h-12 w-12 ${getAvatarColor(student.name)}`}
-                  >
-                    <AvatarFallback
-                      className={`${getAvatarColor(student.name)} text-white`}
-                    >
-                      {getInitials(student.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold text-lg">{student.name}</p>
-                    <p className="text-sm text-muted-foreground">Student</p>
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-20" />
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </div>
+        ) : data?.teacher ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="cursor-pointer transition-all hover:shadow-md border-l-4 border-l-purple-500">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <Avatar
+                    className={`h-12 w-12 ${getAvatarColor(data.teacher.name)}`}
+                  >
+                    <AvatarFallback
+                      className={`${getAvatarColor(data.teacher.name)} text-white`}
+                    >
+                      {getInitials(data.teacher.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-semibold text-lg">{data.teacher.name}</p>
+                    <p className="text-sm text-muted-foreground">Teacher</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
       </div>
+
     </div>
   );
 }

@@ -1,3 +1,15 @@
+export interface StudentSubmission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  submission: string;
+  submittedFile?: string;
+  grade?: string;
+  feedback?: string;
+  submittedAt: string;
+}
+
 export interface Assignment {
   id: string;
   title: string;
@@ -6,6 +18,7 @@ export interface Assignment {
   attachment?: string | null;
   courseId: string;
   submissions?: number;
+  studentSubmissions?: StudentSubmission[];
   createdAt: string;
   updatedAt: string;
 }

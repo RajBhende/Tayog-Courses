@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== "STUDENT") {
+    if (!user || user.role !== "TEACHER") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -26,12 +26,20 @@ export async function GET(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        students: {
-          some: { id: user.id },
-        },
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
       include: {
         teacher: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        coTeachers: {
           select: {
             id: true,
             name: true,
@@ -59,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     if (!course) {
       return NextResponse.json(
-        { success: false, error: "Course not found or access denied" },
+        { success: false, error: "Course not found" },
         { status: 404 }
       );
     }
@@ -84,32 +92,29 @@ export async function GET(request: NextRequest) {
           ? Math.round(totalGrade / gradedSubmissions.length)
           : 0;
 
+      const completedAssignments = studentSubmissions.length;
+      const totalAssignments = course.assignments.length;
+
+      // Determine status based on average grade
+      let status: "Excellent" | "Good" | "Average" | "Needs Improvement" = "Needs Improvement";
+      if (averageGrade >= 90) {
+        status = "Excellent";
+      } else if (averageGrade >= 75) {
+        status = "Good";
+      } else if (averageGrade >= 60) {
+        status = "Average";
+      }
+
       return {
         id: student.id,
         name: student.name,
         email: student.email,
         averageGrade,
-        gradedCount: gradedSubmissions.length,
-        totalAssignments: course.assignments.length,
+        completedAssignments,
+        totalAssignments,
+        status,
       };
     });
-
-    // Get current student's performance
-    const currentStudent = studentPerformance.find((s) => s.id === user.id);
-    const currentStudentAverage = currentStudent?.averageGrade || 0;
-
-    // Get top 3 performers (excluding current student, then add current student if in top 3)
-    const topPerformers = studentPerformance
-      .filter((s) => s.gradedCount > 0)
-      .sort((a, b) => b.averageGrade - a.averageGrade)
-      .slice(0, 3)
-      .map((student, index) => ({
-        rank: index + 1,
-        id: student.id,
-        name: student.name,
-        averageGrade: student.averageGrade,
-        percentage: student.averageGrade,
-      }));
 
     // Get all students for roster
     const roster = course.students.map((student) => ({
@@ -117,13 +122,6 @@ export async function GET(request: NextRequest) {
       name: student.name,
       email: student.email,
     }));
-
-    // Get teacher information
-    const teacher = {
-      id: course.teacher.id,
-      name: course.teacher.name,
-      email: course.teacher.email,
-    };
 
     // Construct shareable link using request origin
     const origin = request.headers.get("origin") || request.headers.get("host");
@@ -133,13 +131,38 @@ export async function GET(request: NextRequest) {
       : process.env.NEXTAUTH_URL || "http://localhost:3000";
     const shareableLink = `${baseUrl}/student/enroll?courseId=${courseId}`;
 
+    // Generate teacher code (using course name prefix + course ID)
+    const teacherCode = `TEACH-${course.name.substring(0, 4).toUpperCase()}-${courseId.slice(0, 4).toUpperCase()}`;
+
+    // Get all team members (main teacher + co-teachers)
+    const teamMembers = [
+      {
+        id: course.teacher.id,
+        name: course.teacher.name,
+        email: course.teacher.email,
+        role: "Teacher",
+      },
+      ...course.coTeachers.map((coTeacher) => ({
+        id: coTeacher.id,
+        name: coTeacher.name,
+        email: coTeacher.email,
+        role: "Co-Teacher",
+      })),
+    ];
+
+    // Check if current user is the main teacher
+    const isMainTeacher = course.teacherId === user.id;
+
     return NextResponse.json({
       success: true,
-      currentStudentAverage,
-      topPerformers,
+      studentPerformance,
       roster,
-      teacher,
       shareableLink,
+      teacherCode,
+      teamMembers,
+      mainTeacher: course.teacher,
+      coTeachers: course.coTeachers,
+      isMainTeacher,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {

@@ -15,8 +15,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get courses where user is main teacher OR co-teacher
     const courses = await prisma.course.findMany({
-      where: { teacherId: user.id },
+      where: {
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
+      },
       include: {
         _count: {
           select: { students: true },

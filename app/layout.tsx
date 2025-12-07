@@ -13,7 +13,13 @@ export const metadata: Metadata = {
   title: "Tayog Courses",
   description: "Educational platform for teachers and students",
   icons: {
-    icon: "/logo/tayog.svg",
+    icon: [
+      { url: "/logo/tayog.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/logo/tayog.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/logo/tayog.svg",
   },
 };
 
@@ -23,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={poppins.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={poppins.className} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

@@ -27,6 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useCourseStore } from "@/lib/courseStore";
 
 const menuItems = [
   {
@@ -66,17 +67,74 @@ function getInitials(name: string | null | undefined): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// Helper function to truncate long names intelligently
+function truncateName(name: string, maxLength: number = 20): string {
+  if (!name || name.length <= maxLength) return name;
+  
+  const parts = name.trim().split(" ").filter(p => p.length > 0);
+  
+  // If single word, truncate it
+  if (parts.length === 1) {
+    return name.substring(0, maxLength - 3) + "...";
+  }
+  
+  // Try first name + middle name(s) if it fits
+  if (parts.length >= 3) {
+    // Try: FirstName + MiddleName(s) + LastInitial
+    let result = parts[0];
+    for (let i = 1; i < parts.length - 1; i++) {
+      const withMiddle = `${result} ${parts[i]}`;
+      const withLastInitial = `${withMiddle} ${parts[parts.length - 1][0]}.`;
+      if (withLastInitial.length + 3 <= maxLength) {
+        result = withMiddle;
+      } else {
+        break;
+      }
+    }
+    const lastInitial = `${result} ${parts[parts.length - 1][0]}.`;
+    if (lastInitial.length + 3 <= maxLength) {
+      return lastInitial + "...";
+    }
+  }
+  
+  // Try first name + last name initial
+  if (parts.length >= 2) {
+    const firstName = parts[0];
+    const lastName = parts[parts.length - 1];
+    const withLastInitial = `${firstName} ${lastName[0]}.`;
+    
+    if (withLastInitial.length + 3 <= maxLength) {
+      return withLastInitial + "...";
+    }
+    
+    // If still too long, just show first name + "..."
+    if (firstName.length + 3 <= maxLength) {
+      return firstName + "...";
+    }
+    
+    // If first name itself is too long
+    return firstName.substring(0, maxLength - 3) + "...";
+  }
+  
+  // Fallback: truncate the whole string
+  return name.substring(0, maxLength - 3) + "...";
+}
+
 export function StudentSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useSidebar();
   const { data: session } = useSession();
+  const clearCourse = useCourseStore((state) => state.clearCourse);
 
-  const userName = session?.user?.name || "User";
+  const fullUserName = session?.user?.name || "User";
+  const userName = truncateName(fullUserName, 20);
   const userRole = session?.user?.role === "TEACHER" ? "Teacher" : session?.user?.role === "STUDENT" ? "Student" : "";
   const userInitials = getInitials(session?.user?.name);
 
   const handleLogout = async () => {
+    // Clear course store
+    clearCourse();
     // Clear any stored authentication data
     if (typeof window !== "undefined") {
       localStorage.clear();
@@ -84,8 +142,8 @@ export function StudentSidebar() {
     }
     // Sign out from next-auth
     await nextAuthSignOut({ redirect: false });
-    // Redirect to landing page
-    router.push("/");
+    // Redirect to landing page with full page reload
+    window.location.href = "/";
   };
 
   return (
@@ -138,8 +196,8 @@ export function StudentSidebar() {
               <Avatar>
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                <p className="truncate font-semibold text-sm">{userName}</p>
+              <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate" title={fullUserName}>{userName}</p>
                 <p className="truncate text-xs text-muted-foreground">{userRole}</p>
               </div>
             </div>

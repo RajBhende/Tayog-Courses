@@ -3,7 +3,7 @@ import { api } from '@/lib/axios';
 
 interface SubmitAssignmentData {
   assignmentId: string;
-  summary: string;
+  summary?: string;
   fileUrl?: string;
 }
 

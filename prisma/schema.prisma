@@ -24,6 +24,7 @@ model User {
   updatedAt        DateTime          @updatedAt
   courses          Course[]
   studentCourses   Course[]          @relation("StudentCourse")
+  coTeachingCourses Course[]         @relation("CoTeacherCourse")
   submissions      Submission[]
   feedbacks        Feedback[]
   scheduledClasses ScheduleClasses[]
@@ -44,6 +45,7 @@ model Course {
   teacherId        String
   teacher          User              @relation(fields: [teacherId], references: [id])
   students         User[]            @relation("StudentCourse")
+  coTeachers       User[]            @relation("CoTeacherCourse")
   assignments      Assignment[]
   resources        Resources[]
   scheduledClasses ScheduleClasses[]

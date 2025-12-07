@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Clock, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScheduleClassDialog } from "@/components/teacher/ScheduleClassDialog";
@@ -17,8 +20,84 @@ import { useSchedules } from "@/hooks/teacher/schedule/useSchedules";
 import { format } from "date-fns";
 
 export default function SchedulePage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const { data: scheduleData = [], isLoading } = useSchedules();
+
+  // Authentication check
+  React.useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/teacher/login");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user) {
+      if (session.user.role !== "TEACHER") {
+        router.push("/");
+        return;
+      }
+    }
+  }, [status, session, router]);
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-5 w-80" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Class</TableHead>
+                <TableHead>Topic</TableHead>
+                <TableHead className="w-[180px]">Date & Time</TableHead>
+                <TableHead className="w-[180px] text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-9 w-28 ml-auto" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not a teacher
+  if (status === "unauthenticated" || session?.user?.role !== "TEACHER") {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -57,11 +136,30 @@ export default function SchedulePage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  Loading schedules...
+              <>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Skeleton className="h-6 w-24" />
+                        <Skeleton className="h-6 w-20" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-9 w-28 ml-auto" />
                 </TableCell>
               </TableRow>
+                ))}
+              </>
             ) : scheduleData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">

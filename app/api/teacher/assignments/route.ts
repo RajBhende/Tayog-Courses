@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/getSession";
 import { createAssignmentSchema } from "@/validation/assignments";
+import { getS3FileUrl } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +26,10 @@ export async function GET(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 
@@ -42,6 +46,24 @@ export async function GET(request: NextRequest) {
         _count: {
           select: { submissions: true },
         },
+        submissions: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            feedback: {
+              select: {
+                comment: true,
+                grade: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -55,6 +77,23 @@ export async function GET(request: NextRequest) {
         dueDate: assignment.dueDate.toISOString(),
         attachment: assignment.attachment,
         submissions: assignment._count.submissions,
+        studentSubmissions: assignment.submissions.map((submission) => ({
+          id: submission.id,
+          studentId: submission.student.id,
+          studentName: submission.student.name || "Unknown",
+          studentEmail: submission.student.email || "",
+          submission: submission.summary,
+          submittedFile: submission.fileUrl
+            ? submission.fileUrl.startsWith("http")
+              ? submission.fileUrl
+              : getS3FileUrl(submission.fileUrl)
+            : undefined,
+          grade: submission.feedback?.grade
+            ? `${submission.feedback.grade}/100`
+            : undefined,
+          feedback: submission.feedback?.comment || undefined,
+          submittedAt: submission.createdAt.toISOString(),
+        })),
       }))
     );
   } catch (error: unknown) {
@@ -96,7 +135,10 @@ export async function POST(request: NextRequest) {
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 

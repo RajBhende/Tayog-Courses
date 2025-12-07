@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Video } from "lucide-react";
@@ -12,11 +13,19 @@ interface StudentNextClassProps {
 
 export function StudentNextClass({ courseId }: StudentNextClassProps) {
   const { data: schedules = [], isLoading } = useSchedules();
+  const [now, setNow] = React.useState<Date | null>(null);
 
-  const now = new Date();
-  const upcomingSchedules = schedules
-    .filter((s) => new Date(s.time) >= now)
-    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  // Set current date only on client side to avoid hydration issues
+  React.useEffect(() => {
+    setNow(new Date());
+  }, []);
+
+  const upcomingSchedules = React.useMemo(() => {
+    if (!now || !schedules.length) return [];
+    return schedules
+      .filter((s) => new Date(s.time) >= now)
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  }, [schedules, now]);
   
   const nextClass = upcomingSchedules[0];
 
@@ -53,7 +62,7 @@ export function StudentNextClass({ courseId }: StudentNextClassProps) {
   }
 
   const classDate = new Date(nextClass.time);
-  const isToday = classDate.toDateString() === now.toDateString();
+  const isToday = now ? classDate.toDateString() === now.toDateString() : false;
   const timeDisplay = isToday 
     ? `${format(classDate, "hh:mm a")} Today`
     : format(classDate, "hh:mm a, MMM dd");
