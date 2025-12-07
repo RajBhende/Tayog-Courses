@@ -93,7 +93,7 @@ export function EditAssignmentDialog({
         assignmentId: assignment.id,
         data: {
           ...values,
-          attachment: file ? file.name : assignment.attachment || null,
+          attachment: file ? file.name : assignment.attachment ?? undefined,
         },
       },
       {
