@@ -51,7 +51,7 @@ export default function StudentLoginPage() {
           return;
         }
 
-        router.push("/student");
+        router.push("/student/lobby");
         router.refresh();
       }
     } catch (err) {

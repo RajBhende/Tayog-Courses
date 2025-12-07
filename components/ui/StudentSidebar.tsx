@@ -6,6 +6,7 @@ import {
   FileText,
   Home,
   LogOut,
+  Users,
   Video,
 } from "lucide-react";
 import Image from "next/image";
@@ -31,7 +32,7 @@ const menuItems = [
   {
     title: "Dashboard",
     icon: Home,
-    href: "/student",
+    href: "/student/dashboard",
   },
   {
     title: "Assignments",
@@ -47,6 +48,11 @@ const menuItems = [
     title: "Resources",
     icon: Video,
     href: "/student/resources",
+  },
+  {
+    title: "People",
+    icon: Users,
+    href: "/student/people",
   },
 ];
 
@@ -88,7 +94,7 @@ export function StudentSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/student" className="flex items-center gap-3">
+              <Link href="/student/dashboard" className="flex items-center gap-3">
                 <div className="flex shrink-0 items-center justify-start">
                   <Image
                     src={state === "collapsed" ? "/logo/tayog.svg" : "/logo/tayoglogo.svg"}

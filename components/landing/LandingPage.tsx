@@ -14,7 +14,7 @@ export function LandingPage() {
         <div className="w-full md:w-1/2 bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 flex flex-col justify-between p-5 sm:p-6 md:p-8 min-h-[200px] md:min-h-0">
           <div className="flex flex-col gap-3 sm:gap-4 md:gap-6">
             {/* Logo */}
-            <div className="flex justify-start">
+            {/* <div className="flex justify-start">
               <Image
                 src="/logo/tayogwhite.svg"
                 alt="Tayog Logo"
@@ -22,7 +22,7 @@ export function LandingPage() {
                 height={77}
                 className="h-8 sm:h-10 md:h-12 w-auto"
               />
-            </div>
+            </div> */}
 
             {/* Title and Description */}
             <div className="flex flex-col gap-2 sm:gap-2 md:gap-3">

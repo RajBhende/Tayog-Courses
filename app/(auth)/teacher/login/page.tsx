@@ -51,7 +51,7 @@ export default function TeacherLoginPage() {
           return;
         }
 
-        router.push("/teacher");
+        router.push("/teacher/lobby");
         router.refresh();
       }
     } catch (err) {
