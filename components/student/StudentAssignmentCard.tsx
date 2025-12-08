@@ -16,6 +16,7 @@ import {
 import { Clock, FileText, Download, MessageSquare, Upload, X, CheckCircle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSubmitAssignment } from "@/hooks/student/assignments/useSubmitAssignment";
+import { FileViewerDialog } from "@/components/ui/FileViewerDialog";
 import type { StudentAssignment } from "@/hooks/student/assignments/useAssignments";
 
 interface StudentAssignmentCardProps {
@@ -33,6 +34,9 @@ export function StudentAssignmentCard({
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const { mutate: submitAssignment, isPending: isSubmitting } = useSubmitAssignment();
   const [isSubmitted, setIsSubmitted] = React.useState(assignment.status !== "pending");
+  const [fileViewerOpen, setFileViewerOpen] = React.useState(false);
+  const [fileViewerUrl, setFileViewerUrl] = React.useState<string>("");
+  const [fileViewerName, setFileViewerName] = React.useState<string>("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const isExpanded = expandedId === assignment.id;
 
@@ -152,10 +156,18 @@ export function StudentAssignmentCard({
                       variant="ghost"
                       size="sm"
                       className="h-auto p-0 text-xs text-blue-600 hover:text-blue-700 hover:bg-transparent"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (assignment.attachment) {
+                          setFileViewerUrl(assignment.attachment);
+                          setFileViewerName(assignment.title);
+                          setFileViewerOpen(true);
+                        }
+                      }}
                     >
                       <FileText className="h-3.5 w-3.5 mr-1.5" />
-                      {assignment.attachment}
+                      <Download className="h-3.5 w-3.5 mr-1" />
+                      View Attachment
                     </Button>
                   )}
                 </div>
@@ -180,6 +192,32 @@ export function StudentAssignmentCard({
                 <p className="text-sm text-muted-foreground">
                   {assignment.title || assignment.description}
                 </p>
+              </div>
+            )}
+
+            {/* Assignment Attachment */}
+            {assignment.attachment && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  ASSIGNMENT ATTACHMENT
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (assignment.attachment) {
+                      setFileViewerUrl(assignment.attachment);
+                      setFileViewerName(assignment.title);
+                      setFileViewerOpen(true);
+                    }
+                  }}
+                  className="w-full justify-start"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
+                  View Assignment File
+                </Button>
               </div>
             )}
 
@@ -313,6 +351,12 @@ export function StudentAssignmentCard({
           </CardContent>
         </CollapsibleContent>
       </Card>
+      <FileViewerDialog
+        open={fileViewerOpen}
+        onOpenChange={setFileViewerOpen}
+        fileUrl={fileViewerUrl}
+        fileName={fileViewerName}
+      />
     </Collapsible>
   );
 }

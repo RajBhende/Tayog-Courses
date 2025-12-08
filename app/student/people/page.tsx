@@ -6,9 +6,8 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Link2, Copy, Trophy, BarChart3 } from "lucide-react";
+import { Link2, Copy } from "lucide-react";
 import { useCourseStore } from "@/lib/courseStore";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
@@ -189,118 +188,6 @@ export default function StudentPeoplePage() {
           )}
         </CardContent>
       </Card>
-
-      {/* My Progress & Top Performers Section */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">My Progress & Top Performers</h2>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* My Current Standing Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                My Current Standing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex items-baseline gap-2">
-                      <Skeleton className="h-10 w-16" />
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                    <Skeleton className="h-2 w-full" />
-                  </div>
-                </>
-              ) : (
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">
-                      {data?.currentStudentAverage ?? 0}
-                  </span>
-                  <span className="text-lg text-muted-foreground">
-                    / 100 avg
-                  </span>
-                </div>
-                  <Progress
-                    value={data?.currentStudentAverage ?? 0}
-                    className="h-2"
-                  />
-              </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Class Top Performers Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-600" />
-                <CardTitle>Class Top Performers</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <>
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-2 rounded-lg"
-                    >
-                      <Skeleton className="h-6 w-6 rounded-full" />
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <Skeleton className="h-4 flex-1" />
-                      <Skeleton className="h-4 w-12" />
-                    </div>
-                  ))}
-                </>
-              ) : data?.topPerformers && data.topPerformers.length > 0 ? (
-                <>
-                  {data.topPerformers.map((performer) => (
-                <div
-                  key={performer.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
-                >
-                  <div
-                    className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${getRankColor(
-                      performer.rank
-                    )}`}
-                  >
-                    {performer.rank}
-                  </div>
-                  <Avatar
-                    className={`h-10 w-10 ${getAvatarColor(performer.name)}`}
-                  >
-                    <AvatarFallback
-                      className={`${getAvatarColor(performer.name)} text-white`}
-                    >
-                      {getInitials(performer.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{performer.name}</p>
-                  </div>
-                  <div className="text-sm font-semibold">
-                    {performer.percentage}%
-                  </div>
-                </div>
-              ))}
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                Only top 3 students are visible to class.
-              </p>
-                </>
-              ) : (
-                <p className="text-sm text-center text-muted-foreground py-4">
-                  No performance data available yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Class Teacher Section */}
       <div className="space-y-4">

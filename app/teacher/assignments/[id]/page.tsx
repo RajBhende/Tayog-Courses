@@ -6,14 +6,12 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EditAssignmentDialog } from "@/components/teacher/EditAssignmentDialog";
+import { SubmissionsTable } from "@/components/teacher/SubmissionsTable";
+import { FileViewerDialog } from "@/components/ui/FileViewerDialog";
 import { useAssignment } from "@/hooks/teacher/assignments/useAssignment";
-import { Clock, FileText, Download, ArrowLeft, Edit } from "lucide-react";
+import { Clock, FileText, ArrowLeft, Edit } from "lucide-react";
 import { format } from "date-fns";
 
 // Helper function to get initials from name
@@ -33,6 +31,9 @@ export default function AssignmentDetailPage() {
   const assignmentId = params?.id as string;
   const { data: assignment, isLoading } = useAssignment(assignmentId);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [fileViewerOpen, setFileViewerOpen] = React.useState(false);
+  const [fileViewerUrl, setFileViewerUrl] = React.useState<string>("");
+  const [fileViewerName, setFileViewerName] = React.useState<string>("");
 
   // Authentication check
   React.useEffect(() => {
@@ -177,7 +178,9 @@ export default function AssignmentDetailPage() {
                     size="sm"
                     onClick={() => {
                       if (assignment.attachment) {
-                        window.open(assignment.attachment, '_blank');
+                        setFileViewerUrl(assignment.attachment);
+                        setFileViewerName(assignment.title);
+                        setFileViewerOpen(true);
                       }
                     }}
                   >
@@ -200,109 +203,22 @@ export default function AssignmentDetailPage() {
 
             {/* Student Submissions Section */}
             <div className="space-y-4 pt-6 border-t">
+              <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Student Submissions
+                  Student Submissions ({submissions.length})
               </Label>
-
-              {submissions.length > 0 ? (
-                <div className="space-y-4">
-                  {submissions.map((submission) => (
-                    <Card key={submission.id} className="border-2">
-                      <CardContent className="p-4 space-y-4">
-                        {/* Student Info */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {submission.studentInitials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">
-                                {submission.studentName}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {submission.studentEmail}
-                              </span>
-                            </div>
-                          </div>
-                          {submission.grade && (
-                            <Badge className="bg-green-500 text-white px-3 py-1 text-sm">
-                              Graded: {submission.grade}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Submission Text */}
-                        {submission.submission && (
-                          <div className="p-3 bg-muted/50 rounded-md border text-sm whitespace-pre-wrap">
-                            {submission.submission}
-                          </div>
-                        )}
-
-                        {/* Submitted File */}
-                        {submission.submittedFile && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (submission.submittedFile) {
-                                  window.open(submission.submittedFile, '_blank');
-                                }
-                              }}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download Submitted File
-                            </Button>
-                          </div>
-                        )}
-
-                        {/* Feedback Section */}
-                        <div className="space-y-2 pt-2 border-t">
-                          <Label className="text-xs font-semibold uppercase tracking-wider">
-                            Feedback
-                          </Label>
-                          <Textarea
-                            placeholder="Add your feedback here..."
-                            defaultValue={submission.feedback || ""}
-                            className="min-h-[100px] text-sm"
-                          />
-                        </div>
-
-                        {/* Grade and Action */}
-                        <div className="flex items-center gap-3 pt-2">
-                          <div className="flex items-center gap-1.5">
-                            <Input
-                              type="number"
-                              defaultValue={submission.grade?.split("/")[0] || ""}
-                              className="w-20 h-9 text-sm"
-                              placeholder="85"
-                              min="0"
-                              max="100"
-                            />
-                            <span className="text-sm text-muted-foreground">/100</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 h-9"
-                          >
-                            Return to Student
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
-              ) : (
-                <div className="text-center py-12 text-sm text-muted-foreground border rounded-lg">
-                  No submissions yet
-                </div>
-              )}
+              <SubmissionsTable submissions={submissions} />
             </div>
           </CardContent>
         </Card>
       </div>
+      <FileViewerDialog
+        open={fileViewerOpen}
+        onOpenChange={setFileViewerOpen}
+        fileUrl={fileViewerUrl}
+        fileName={fileViewerName}
+      />
     </>
   );
 }

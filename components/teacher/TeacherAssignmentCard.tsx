@@ -70,20 +70,10 @@ export function TeacherAssignmentCard({
                   <span>Due: {formattedDueDate}</span>
                 </div>
                 {assignment.attachment && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-blue-600 hover:text-blue-700 hover:bg-transparent"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (assignment.attachment) {
-                        window.open(assignment.attachment, '_blank');
-                      }
-                    }}
-                  >
-                    <FileText className="h-3.5 w-3.5 mr-1.5" />
-                    {assignment.attachment}
-                  </Button>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>File attached</span>
+                  </div>
                 )}
               </div>
             </div>

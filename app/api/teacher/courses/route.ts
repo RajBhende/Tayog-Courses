@@ -27,6 +27,14 @@ export async function GET(request: NextRequest) {
         _count: {
           select: { students: true },
         },
+        students: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+          take: 3, // Only get first 3 students for avatar display
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -39,6 +47,11 @@ export async function GET(request: NextRequest) {
         thumbnail: course.thumbnail,
         teacherId: course.teacherId,
         studentCount: course._count.students,
+        students: course.students.map((student: (typeof course.students)[number]) => ({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+        })),
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
       }))

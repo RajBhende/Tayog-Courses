@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -66,13 +67,17 @@ export default function StudentLobbyPage() {
 
   const joinCourseMutation = useMutation({
     mutationFn: async (code: string) => {
-      // TODO: Implement join course API endpoint for students
       const response = await api.post("/student/courses/join", { code });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student", "courses"] });
       setStudentCode("");
+      alert("Successfully joined the course!");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || "Failed to join course. Please try again.";
+      alert(errorMessage);
     },
   });
 
@@ -143,15 +148,15 @@ export default function StudentLobbyPage() {
       />
 
       {/* Main Content */}
-      <div className="min-h-screen bg-gray-50 p-4 pt-8">
-        <div className="max-w-7xl mx-auto space-y-4 px-6">
+      <div className="min-h-screen bg-gray-50 p-4 pt-4 sm:pt-8">
+        <div className="max-w-7xl mx-auto space-y-4 px-4 sm:px-6">
           {/* Dashboard Title and Actions */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">My Courses</h1>
-              <p className="text-gray-600 mt-1">Select a course to manage or view.</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Courses</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Select a course to manage or view.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <Input
                   placeholder="Enter Course Code"
@@ -162,13 +167,13 @@ export default function StudentLobbyPage() {
                       handleJoinCourse();
                     }
                   }}
-                  className="w-48"
+                  className="w-full sm:w-48"
                 />
                 <Button
                   onClick={handleJoinCourse}
                   disabled={!studentCode.trim() || joinCourseMutation.isPending}
                   variant="outline"
-                  className="bg-gray-200 hover:bg-gray-300"
+                  className="bg-gray-200 hover:bg-gray-300 whitespace-nowrap"
                 >
                   {joinCourseMutation.isPending ? "Joining..." : "Join"}
                 </Button>
@@ -178,8 +183,24 @@ export default function StudentLobbyPage() {
 
           {/* Courses Grid */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-gray-500">Loading courses...</p>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden p-0">
+                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-4 sm:p-6">
+                    <Skeleton className="h-5 sm:h-6 w-32 bg-white/30 mb-2" />
+                    <Skeleton className="h-3 sm:h-4 w-24 bg-white/30" />
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6 bg-white">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-8 rounded-full bg-gray-200" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24 bg-gray-200" />
+                        <Skeleton className="h-3 w-16 bg-gray-200" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : !hasCourses ? (
             <Card>
@@ -196,7 +217,7 @@ export default function StudentLobbyPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
                 <Card
                   key={course.id}
@@ -209,20 +230,20 @@ export default function StudentLobbyPage() {
                   onClick={() => handleCourseSelect(course)}
                 >
                   {/* Gradient Top Section */}
-                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 relative">
-                    <div className="absolute top-4 right-4">
-                      <Shield className="h-5 w-5 text-white/80" />
+                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-4 sm:p-6 relative">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
                     </div>
-                    <CardTitle className="text-white text-lg line-clamp-1">
+                    <CardTitle className="text-white text-base sm:text-lg line-clamp-1 pr-8">
                       {course.name}
                     </CardTitle>
-                    <p className="text-white/90 text-sm mt-1">
+                    <p className="text-white/90 text-xs sm:text-sm mt-1">
                       {course.name.substring(0, 4).toUpperCase()}-{course.id.slice(0, 3).toUpperCase()}
                     </p>
                   </CardHeader>
 
                   {/* White Bottom Section */}
-                  <CardContent className="p-6 bg-white">
+                  <CardContent className="p-4 sm:p-6 bg-white">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8 bg-purple-600">
@@ -231,7 +252,7 @@ export default function StudentLobbyPage() {
                           </AvatarFallback>
                         </Avatar>
                         {course.teacher && (
-                          <div className="text-sm">
+                          <div className="text-xs sm:text-sm">
                             <p className="font-medium text-gray-900">{course.teacher.name}</p>
                             <p className="text-xs text-gray-500">Teacher</p>
                           </div>

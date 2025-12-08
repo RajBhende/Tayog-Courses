@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Plus, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,11 @@ import type { Course } from "@/types";
 
 interface CourseWithCount extends Course {
   studentCount?: number;
+  students?: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
 }
 
 export default function TeacherDashboardPage() {
@@ -48,7 +54,7 @@ export default function TeacherDashboardPage() {
   const { data: courses = [], isLoading } = useQuery<CourseWithCount[]>({
     queryKey: ["teacher", "courses"],
     queryFn: async () => {
-      const response = await api.get<Array<{ success: boolean; studentCount?: number } & Course>>("/teacher/courses");
+      const response = await api.get<Array<{ success: boolean; studentCount?: number; students?: Array<{ id: string; name: string; email: string }> } & Course>>("/teacher/courses");
       return response.data.map((course) => ({
         id: course.id,
         name: course.name,
@@ -56,6 +62,7 @@ export default function TeacherDashboardPage() {
         thumbnail: course.thumbnail,
         teacherId: course.teacherId,
         studentCount: course.studentCount || 0,
+        students: course.students || [],
         createdAt: course.createdAt,
         updatedAt: course.updatedAt,
       }));
@@ -145,15 +152,15 @@ export default function TeacherDashboardPage() {
       />
 
       {/* Main Content */}
-      <div className="min-h-screen bg-gray-50 p-4 pt-8">
-        <div className="max-w-7xl mx-auto space-y-4 px-6">
+      <div className="min-h-screen bg-gray-50 p-4 pt-4 sm:pt-8">
+        <div className="max-w-7xl mx-auto space-y-4 px-4 sm:px-6">
           {/* Dashboard Title and Actions */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">My Courses</h1>
-              <p className="text-gray-600 mt-1">Select a course to manage or view.</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Courses</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Select a course to manage or view.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <Input
                   placeholder="Enter Teacher Code"
@@ -164,31 +171,48 @@ export default function TeacherDashboardPage() {
                       handleJoinCourse();
                     }
                   }}
-                  className="w-48"
+                  className="w-full sm:w-48"
                 />
                 <Button
                   onClick={handleJoinCourse}
                   disabled={!teacherCode.trim() || joinCourseMutation.isPending}
                   variant="outline"
-                  className="bg-gray-200 hover:bg-gray-300"
+                  className="bg-gray-200 hover:bg-gray-300 whitespace-nowrap"
                 >
                   {joinCourseMutation.isPending ? "Joining..." : "Join"}
                 </Button>
               </div>
               <Button
                 onClick={() => setCreateDialogOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
-                New Course
+                <span className="sm:inline">New Course</span>
               </Button>
             </div>
           </div>
 
           {/* Courses Grid */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-gray-500">Loading courses...</p>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden p-0">
+                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-4 sm:p-6">
+                    <Skeleton className="h-5 sm:h-6 w-32 bg-white/30 mb-2" />
+                    <Skeleton className="h-3 sm:h-4 w-24 bg-white/30" />
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6 bg-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-8 w-8 rounded-full bg-gray-200" />
+                        <Skeleton className="h-8 w-8 rounded-full -ml-2 bg-gray-200" />
+                        <Skeleton className="h-8 w-8 rounded-full -ml-2 bg-gray-200" />
+                      </div>
+                      <Skeleton className="h-4 w-20 bg-gray-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : !hasCourses ? (
             <Card>
@@ -212,7 +236,7 @@ export default function TeacherDashboardPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
                 <Card
                   key={course.id}
@@ -225,35 +249,44 @@ export default function TeacherDashboardPage() {
                   onClick={() => handleCourseSelect(course)}
                 >
                   {/* Gradient Top Section */}
-                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 relative">
-                    <div className="absolute top-4 right-4">
-                      <Shield className="h-5 w-5 text-white/80" />
+                  <CardHeader className="bg-gradient-to-br from-purple-600 to-purple-700 p-4 sm:p-6 relative">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
                     </div>
-                    <CardTitle className="text-white text-lg line-clamp-1">
+                    <CardTitle className="text-white text-base sm:text-lg line-clamp-1 pr-8">
                       {course.name}
                     </CardTitle>
-                    <p className="text-white/90 text-sm mt-1">
+                    <p className="text-white/90 text-xs sm:text-sm mt-1">
                       {course.name.substring(0, 4).toUpperCase()}-{course.id.slice(0, 3).toUpperCase()}
                     </p>
                   </CardHeader>
 
                   {/* White Bottom Section */}
-                  <CardContent className="p-6 bg-white">
+                  <CardContent className="p-4 sm:p-6 bg-white">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8 bg-purple-600">
-                          <AvatarFallback className="bg-purple-600 text-white text-xs">
-                            {getUserInitials(session?.user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <Avatar className="h-8 w-8 bg-green-500 -ml-2">
-                          <AvatarFallback className="bg-green-500 text-white text-xs">
-                            {course.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
+                      {course.studentCount && course.studentCount > 0 && course.students && course.students.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          {course.students.slice(0, 3).map((student, index) => {
+                            const colors = ["bg-purple-600", "bg-green-500", "bg-blue-500"];
+                            return (
+                              <Avatar
+                                key={student.id}
+                                className={`h-8 w-8 ${colors[index % colors.length]} ${index > 0 ? "-ml-2" : ""}`}
+                              >
+                                <AvatarFallback className={`${colors[index % colors.length]} text-white text-xs`}>
+                                  {getUserInitials(student.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {/* Empty space when no students */}
+                        </div>
+                      )}
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-600">
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">
                           {course.studentCount || 0} STUDENTS
                         </p>
                       </div>

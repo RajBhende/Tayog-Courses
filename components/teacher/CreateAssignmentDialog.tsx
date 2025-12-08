@@ -68,10 +68,37 @@ export function CreateAssignmentDialog({
     watchedValues.description?.trim().length >= 20;
 
   const onSubmit = async (values: CreateAssignmentFormValues) => {
+    let attachmentKey: string | undefined;
+
+    // Upload file to S3 if provided
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/api/teacher/assignments/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || 'File upload failed');
+        }
+
+        const uploadData = await uploadResponse.json();
+        attachmentKey = uploadData.key; // Store S3 key, not URL
+      } catch (error) {
+        console.error('File upload error:', error);
+        alert('Failed to upload file. Please try again.');
+        return;
+      }
+    }
+
     createAssignment(
       {
         ...values,
-        attachment: file ? file.name : undefined,
+        attachment: attachmentKey,
       },
       {
         onSuccess: () => {
@@ -101,6 +128,11 @@ export function CreateAssignmentDialog({
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
+      // Validate file type - only PDF allowed
+      if (droppedFile.type !== "application/pdf" && !droppedFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files are allowed. Please select a PDF file.");
+        return;
+      }
       setFile(droppedFile);
     }
   };
@@ -108,6 +140,13 @@ export function CreateAssignmentDialog({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Validate file type - only PDF allowed
+      if (selectedFile.type !== "application/pdf" && !selectedFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files are allowed. Please select a PDF file.");
+        e.target.value = ""; // Reset input
+        setFile(null);
+        return;
+      }
       setFile(selectedFile);
     }
   };
@@ -126,9 +165,7 @@ export function CreateAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Create New Assignment</DialogTitle>
-      </DialogHeader>
+     
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -236,7 +273,7 @@ export function CreateAssignmentDialog({
             {/* Attach File */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold uppercase tracking-wide">
-                Attach File (Optional)
+                Attach PDF File (Optional)
               </Label>
               <div
                 onDragOver={handleDragOver}
@@ -257,7 +294,7 @@ export function CreateAssignmentDialog({
                   id="file-upload"
                   className="hidden"
                   onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,application/pdf"
                   disabled={isLoading}
                 />
                 {file ? (
@@ -280,7 +317,7 @@ export function CreateAssignmentDialog({
                   >
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Click or drag file here
+                      Click or drag PDF file here
                     </span>
                   </label>
                 )}

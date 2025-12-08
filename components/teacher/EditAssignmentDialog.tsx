@@ -28,9 +28,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Upload, X } from "lucide-react";
+import { CalendarIcon, Upload, X, Download } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, extractKeyFromUrl } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import {
   createAssignmentSchema,
@@ -88,12 +88,49 @@ export function EditAssignmentDialog({
     watchedValues.description?.trim().length >= 20;
 
   const onSubmit = async (values: CreateAssignmentFormValues) => {
+    let attachmentKey: string | undefined;
+
+    // If a new file is provided, upload it to S3
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/api/teacher/assignments/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || 'File upload failed');
+        }
+
+        const uploadData = await uploadResponse.json();
+        attachmentKey = uploadData.key; // Store S3 key, not URL
+      } catch (error) {
+        console.error('File upload error:', error);
+        alert('Failed to upload file. Please try again.');
+        return;
+      }
+    } else {
+      // If no new file, keep the existing attachment key
+      // Extract key from URL if it's a full URL, otherwise use as is
+      if (assignment.attachment) {
+        if (assignment.attachment.startsWith("http")) {
+          attachmentKey = extractKeyFromUrl(assignment.attachment) || assignment.attachment;
+        } else {
+          attachmentKey = assignment.attachment;
+        }
+      }
+    }
+
     updateAssignment(
       {
         assignmentId: assignment.id,
         data: {
           ...values,
-          attachment: file ? file.name : assignment.attachment ?? undefined,
+          attachment: attachmentKey,
         },
       },
       {
@@ -123,6 +160,11 @@ export function EditAssignmentDialog({
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
+      // Validate file type - only PDF allowed
+      if (droppedFile.type !== "application/pdf" && !droppedFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files are allowed. Please select a PDF file.");
+        return;
+      }
       setFile(droppedFile);
     }
   };
@@ -130,6 +172,13 @@ export function EditAssignmentDialog({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Validate file type - only PDF allowed
+      if (selectedFile.type !== "application/pdf" && !selectedFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files are allowed. Please select a PDF file.");
+        e.target.value = ""; // Reset input
+        setFile(null);
+        return;
+      }
       setFile(selectedFile);
     }
   };
@@ -146,9 +195,7 @@ export function EditAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Edit Assignment</DialogTitle>
-      </DialogHeader>
+     
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -256,7 +303,7 @@ export function EditAssignmentDialog({
             {/* Attach File */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold uppercase tracking-wide">
-                Attach File (Optional)
+                Attach PDF File (Optional)
               </Label>
               <div
                 onDragOver={handleDragOver}
@@ -277,7 +324,7 @@ export function EditAssignmentDialog({
                   id="file-upload-edit"
                   className="hidden"
                   onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,application/pdf"
                   disabled={isLoading}
                 />
                 {file ? (
@@ -295,7 +342,21 @@ export function EditAssignmentDialog({
                   </div>
                 ) : assignment.attachment ? (
                   <div className="flex flex-col items-center gap-2">
-                    <span className="text-sm">{assignment.attachment}</span>
+                    <span className="text-sm text-muted-foreground">Current attachment:</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (assignment.attachment) {
+                          window.open(assignment.attachment, '_blank');
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      View Current File
+                    </Button>
                     <label
                       htmlFor="file-upload-edit"
                       className="text-xs text-muted-foreground cursor-pointer hover:text-primary"
@@ -310,7 +371,7 @@ export function EditAssignmentDialog({
                   >
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Click or drag file here
+                      Click or drag PDF file here
                     </span>
                   </label>
                 )}

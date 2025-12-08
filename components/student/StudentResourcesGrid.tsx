@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDialogViewer from "@/components/ui/ImageDialogViewer";
 import VideoDisplay from "@/components/ui/VideoDisplay";
+import { FileViewerDialog } from "@/components/ui/FileViewerDialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Video, Download, Image as ImageIcon } from "lucide-react";
+import { FileText, Video, Image as ImageIcon } from "lucide-react";
 import { useResources, type StudentResource } from "@/hooks/student/resources/useResources";
 import { format } from "date-fns";
 import {
@@ -20,14 +21,15 @@ import {
 export function StudentResourcesGrid() {
   const { data: resources = [], isLoading } = useResources();
   const [viewingResource, setViewingResource] = React.useState<StudentResource | null>(null);
-
-  const handleDownload = (attachment: string) => {
-    window.open(attachment, '_blank');
-  };
+  const [fileViewerOpen, setFileViewerOpen] = React.useState(false);
+  const [fileViewerUrl, setFileViewerUrl] = React.useState<string>("");
+  const [fileViewerName, setFileViewerName] = React.useState<string>("");
 
   const handleView = (resource: StudentResource) => {
     if (resource.type === "PDF_DOCUMENT" && resource.attachment) {
-      window.open(resource.attachment, '_blank');
+      setFileViewerUrl(resource.attachment);
+      setFileViewerName(resource.title);
+      setFileViewerOpen(true);
     } else {
       setViewingResource(resource);
     }
@@ -117,30 +119,16 @@ export function StudentResourcesGrid() {
                     <span className="text-xs text-muted-foreground">
                       {addedDate}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(resource.attachment);
-                        }}
-                        className="h-8"
-                        title="Download"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="link"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleView(resource);
-                        }}
-                        className="h-auto p-0 text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        View Content &gt;
-                      </Button>
-                    </div>
+                    <Button
+                      variant="link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleView(resource);
+                      }}
+                      className="h-auto p-0 text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      View Content &gt;
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -171,6 +159,13 @@ export function StudentResourcesGrid() {
           </DialogContent>
         </Dialog>
       ) : null}
+      <FileViewerDialog
+        open={fileViewerOpen}
+        onOpenChange={setFileViewerOpen}
+        fileUrl={fileViewerUrl}
+        fileName={fileViewerName}
+        fileType="pdf"
+      />
     </>
   );
 }

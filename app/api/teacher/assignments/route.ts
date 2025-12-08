@@ -75,7 +75,11 @@ export async function GET(request: NextRequest) {
         title: assignment.title,
         description: assignment.description,
         dueDate: assignment.dueDate.toISOString(),
-        attachment: assignment.attachment,
+        attachment: assignment.attachment
+          ? assignment.attachment.startsWith("http")
+            ? assignment.attachment
+            : getS3FileUrl(assignment.attachment)
+          : null,
         submissions: assignment._count.submissions,
         studentSubmissions: assignment.submissions.map((submission: (typeof assignments)[number]['submissions'][number]) => ({
                     id: submission.id,

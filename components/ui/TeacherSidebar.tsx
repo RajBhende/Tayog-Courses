@@ -53,13 +53,8 @@ const menuItems = [
     href: "/teacher/resources",
   },
   {
-    title: "Students",
-    icon: Users,
-    href: "/teacher/students",
-  },
-  {
     title: "People",
-    icon: UserPlus,
+    icon: Users,
     href: "/teacher/people",
   },
 ];

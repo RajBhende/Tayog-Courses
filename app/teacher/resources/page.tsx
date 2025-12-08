@@ -20,12 +20,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Video, MoreVertical, Upload, X, Image as ImageIcon, FolderOpen, Check, Download, Trash2, Calendar } from "lucide-react";
+import { FileText, Video, MoreVertical, Upload, X, Image as ImageIcon, FolderOpen, Check, Trash2, Calendar } from "lucide-react";
 import Image from "next/image";
 import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageDialogViewer from "@/components/ui/ImageDialogViewer";
 import VideoDisplay from "@/components/ui/VideoDisplay";
+import { FileViewerDialog } from "@/components/ui/FileViewerDialog";
 import { useResources } from "@/hooks/teacher/resources/useResources";
 import { useCreateResource } from "@/hooks/teacher/resources/useCreateResource";
 import { useDeleteResource } from "@/hooks/teacher/resources/useDeleteResource";
@@ -65,10 +66,24 @@ export default function ResourcesPage() {
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
   const [viewingResource, setViewingResource] = React.useState<Resource | null>(null);
   const [deletingResourceId, setDeletingResourceId] = React.useState<string | null>(null);
+  const [fileViewerOpen, setFileViewerOpen] = React.useState(false);
+  const [fileViewerUrl, setFileViewerUrl] = React.useState<string>("");
+  const [fileViewerName, setFileViewerName] = React.useState<string>("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { data: resources = [], isLoading: isLoadingResources } = useResources();
   const { mutate: createResource, isPending: isUploading } = useCreateResource();
   const { mutate: deleteResource, isPending: isDeleting } = useDeleteResource();
+
+  const handleViewResource = (resource: Resource) => {
+    if (resource.type === "PDF_DOCUMENT" && resource.attachment) {
+      setFileViewerUrl(resource.attachment);
+      setFileViewerName(resource.title);
+      setFileViewerOpen(true);
+    } else if (resource.attachment) {
+      setViewingResource(resource);
+    }
+  };
+
 
   // Authentication check
   React.useEffect(() => {
@@ -409,7 +424,8 @@ export default function ResourcesPage() {
             return (
               <Card 
                 key={resource.id} 
-                className="relative overflow-hidden transition-all duration-200"
+                className="relative overflow-hidden transition-all duration-200 cursor-pointer hover:shadow-md"
+                onClick={() => handleViewResource(resource)}
               >
                 <CardContent className="p-4 relative">
                   <div className="flex items-center gap-4">
@@ -447,23 +463,6 @@ export default function ResourcesPage() {
 
                     {/* Action Icons on right */}
                     <div className="flex items-center gap-2">
-                      {resource.attachment && (
-                        <button
-                          type="button"
-                          className="p-0 border-0 bg-transparent cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (resource.attachment) {
-                              window.open(resource.attachment, '_blank');
-                            }
-                          }}
-                          title="Download"
-                        >
-                          <Download
-                            className="h-4 w-4 text-muted-foreground hover:text-blue-600 transition-colors"
-                          />
-                        </button>
-                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <button
@@ -527,6 +526,12 @@ export default function ResourcesPage() {
           </DialogContent>
         </Dialog>
       ) : null}
+      <FileViewerDialog
+        open={fileViewerOpen}
+        onOpenChange={setFileViewerOpen}
+        fileUrl={fileViewerUrl}
+        fileName={fileViewerName}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingResourceId} onOpenChange={(open) => !open && setDeletingResourceId(null)}>
@@ -561,6 +566,12 @@ export default function ResourcesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <FileViewerDialog
+        open={fileViewerOpen}
+        onOpenChange={setFileViewerOpen}
+        fileUrl={fileViewerUrl}
+        fileName={fileViewerName}
+      />
     </div>
   );
 }

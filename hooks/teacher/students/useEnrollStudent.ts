@@ -23,6 +23,9 @@ export function useEnrollStudent() {
       queryClient.invalidateQueries({
         queryKey: ["teacher", "students", selectedCourseId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["teacher", "people", selectedCourseId],
+      });
     },
   });
 }

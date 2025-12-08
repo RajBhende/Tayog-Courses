@@ -19,15 +19,28 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Link2,
-  Shield,
   Copy,
   UserPlus,
+  Trash2,
 } from "lucide-react";
 import { useCourseStore } from "@/lib/courseStore";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
-import { AddCoTeacherDialog } from "@/components/teacher/AddCoTeacherDialog";
 import { InviteCoTeacherDialog } from "@/components/teacher/InviteCoTeacherDialog";
+import { EnrollStudentDialog } from "@/components/teacher/EnrollStudentDialog";
+import { useStudents } from "@/hooks/teacher/students/useStudents";
+import { useRemoveStudent } from "@/hooks/teacher/students/useRemoveStudent";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { Student } from "@/types";
 
 interface StudentPerformance {
@@ -52,7 +65,7 @@ interface PeopleData {
   studentPerformance: StudentPerformance[];
   roster: Student[];
   shareableLink: string;
-  teacherCode: string;
+  studentCode?: string;
   teamMembers: TeamMember[];
   mainTeacher: { id: string; name: string; email: string };
   coTeachers: Array<{ id: string; name: string; email: string }>;
@@ -103,10 +116,11 @@ export default function TeacherPeoplePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { selectedCourseId, selectedCourse } = useCourseStore();
-  const [copiedLink, setCopiedLink] = React.useState(false);
-  const [copiedCode, setCopiedCode] = React.useState(false);
-  const [addCoTeacherDialogOpen, setAddCoTeacherDialogOpen] = React.useState(false);
+  const [copiedStudentCode, setCopiedStudentCode] = React.useState(false);
   const [inviteCoTeacherDialogOpen, setInviteCoTeacherDialogOpen] = React.useState(false);
+  const [enrollStudentDialogOpen, setEnrollStudentDialogOpen] = React.useState(false);
+  const { data: students = [], isLoading: isLoadingStudents } = useStudents();
+  const removeStudent = useRemoveStudent();
 
   // Authentication check
   React.useEffect(() => {
@@ -142,26 +156,14 @@ export default function TeacherPeoplePage() {
     return data?.isMainTeacher ?? data?.mainTeacher?.id === session?.user?.id;
   }, [data?.isMainTeacher, data?.mainTeacher?.id, session?.user?.id]);
 
-  const handleCopyLink = async () => {
-    if (data?.shareableLink) {
+  const handleCopyStudentCode = async () => {
+    if (data?.studentCode) {
       try {
-        await navigator.clipboard.writeText(data.shareableLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
+        await navigator.clipboard.writeText(data.studentCode);
+        setCopiedStudentCode(true);
+        setTimeout(() => setCopiedStudentCode(false), 2000);
       } catch (error) {
-        alert("Failed to copy link to clipboard.");
-      }
-    }
-  };
-
-  const handleCopyCode = async () => {
-    if (data?.teacherCode) {
-      try {
-        await navigator.clipboard.writeText(data.teacherCode);
-        setCopiedCode(true);
-        setTimeout(() => setCopiedCode(false), 2000);
-      } catch (error) {
-        alert("Failed to copy code to clipboard.");
+        alert("Failed to copy student code to clipboard.");
       }
     }
   };
@@ -248,35 +250,7 @@ export default function TeacherPeoplePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Share link to enroll students
-            </p>
-            {isLoading ? (
-              <Skeleton className="h-10 w-full" />
-            ) : (
-            <Button
-              onClick={handleCopyLink}
-              variant="outline"
-              className="w-full bg-gray-100 hover:bg-gray-200"
-                disabled={!data?.shareableLink}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              {copiedLink ? "Copied!" : "Copy Shareable Link"}
-            </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Invite Co-Teachers Card */}
-        <Card className="bg-purple-50 border-purple-200">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-purple-600" />
-              <CardTitle>Invite Co-Teachers</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Share secret code for admin access
+              Share link or course code to enroll students
             </p>
             {isLoading ? (
               <div className="flex items-center gap-2">
@@ -284,22 +258,153 @@ export default function TeacherPeoplePage() {
                 <Skeleton className="h-10 w-10" />
               </div>
             ) : (
-            <div className="flex items-center gap-2">
-              <Input
-                  value={data?.teacherCode ?? ""}
-                readOnly
-                className="bg-white border-purple-300 font-mono"
-              />
-              <Button
-                onClick={handleCopyCode}
-                variant="outline"
-                className="bg-purple-100 hover:bg-purple-200 border-purple-300"
-                  disabled={!data?.teacherCode}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+              data?.studentCode && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={data.studentCode}
+                    readOnly
+                    className="bg-white border-blue-300 font-mono text-sm"
+                    placeholder="Student Course Code"
+                  />
+                  <Button
+                    onClick={handleCopyStudentCode}
+                    variant="outline"
+                    className="bg-blue-100 hover:bg-blue-200 border-blue-300"
+                    disabled={!data.studentCode}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              )
             )}
+          </CardContent>
+        </Card>
+
+      </div>
+
+      {/* Student Directory Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Student Directory</h2>
+            <p className="text-muted-foreground mt-1">
+              Manage enrollment and class roster
+            </p>
+          </div>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => setEnrollStudentDialogOpen(true)}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Enroll New Student
+          </Button>
+        </div>
+
+        <EnrollStudentDialog
+          open={enrollStudentDialogOpen}
+          onOpenChange={setEnrollStudentDialogOpen}
+        />
+
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">ID</TableHead>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingStudents ? (
+                  <>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <Skeleton className="h-5 w-32" />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-48" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-9 w-9 ml-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : students.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      No students found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  students.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium">
+                        {student.studentId}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-blue-100 text-blue-700">
+                              {student.initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{student.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">
+                          {student.email}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Student</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to remove {student.name} from
+                                this course? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => removeStudent.mutate(student.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={removeStudent.isPending}
+                              >
+                                {removeStudent.isPending
+                                  ? "Removing..."
+                                  : "Remove Student"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
@@ -401,64 +506,57 @@ export default function TeacherPeoplePage() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Team Members</h2>
           <div className="flex gap-2">
-            {isMainTeacher ? (
-              <Button
-                variant="outline"
-                onClick={() => setInviteCoTeacherDialogOpen(true)}
-                className="bg-purple-50 hover:bg-purple-100 border-purple-200"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Co-Teacher
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => setAddCoTeacherDialogOpen(true)}
-                className="bg-purple-50 hover:bg-purple-100 border-purple-200"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Join as Co-Teacher
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => setInviteCoTeacherDialogOpen(true)}
+              className="bg-purple-50 hover:bg-purple-100 border-purple-200"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite Co-Teacher
+            </Button>
           </div>
         </div>
         <InviteCoTeacherDialog
           open={inviteCoTeacherDialogOpen}
           onOpenChange={setInviteCoTeacherDialogOpen}
         />
-        <AddCoTeacherDialog
-          open={addCoTeacherDialogOpen}
-          onOpenChange={setAddCoTeacherDialogOpen}
-        />
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Team Member</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
         {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <>
             {[1, 2].map((i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
+                      <TableRow key={i}>
+                        <TableCell>
                   <div className="flex items-center gap-3">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <Skeleton className="h-4 w-32" />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-48" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-24 rounded-full" />
+                        </TableCell>
+                      </TableRow>
             ))}
-          </div>
+                  </>
         ) : data?.teamMembers && data.teamMembers.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {data.teamMembers.map((member) => (
-              <Card
-                key={member.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  member.role === "Teacher" ? "border-l-4 border-l-purple-500" : ""
-                }`}
-              >
-                <CardContent className="p-6">
+                  data.teamMembers.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar
-                      className={`h-12 w-12 ${getAvatarColor(member.name)}`}
+                            className={`h-10 w-10 ${getAvatarColor(member.name)}`}
                     >
                       <AvatarFallback
                         className={`${getAvatarColor(member.name)} text-white`}
@@ -466,20 +564,41 @@ export default function TeacherPeoplePage() {
                         {getInitials(member.name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <p className="font-semibold text-lg">{member.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                          <span className="font-medium">{member.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">
+                          {member.email}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            member.role === "Teacher"
+                              ? "bg-purple-100 text-purple-700 hover:bg-purple-100"
+                              : "bg-blue-100 text-blue-700 hover:bg-blue-100"
+                          }
+                          variant="outline"
+                        >
                         {member.role}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        No team members yet.
                       </p>
-                    </div>
-                  </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No team members yet.</p>
-        )}
       </div>
 
     </div>

@@ -6,11 +6,85 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { BookOpen, Calendar, Users, Clock, Video } from "lucide-react";
 import { useCourseStore } from "@/lib/courseStore";
 import { useAssignments } from "@/hooks/teacher/assignments/useAssignments";
 import { useStudents } from "@/hooks/teacher/students/useStudents";
 import { useSchedules } from "@/hooks/teacher/schedule/useSchedules";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/axios";
+
+interface StudentPerformance {
+  id: string;
+  name: string;
+  email: string;
+  averageGrade: number;
+  completedAssignments: number;
+  totalAssignments: number;
+  status: "Excellent" | "Good" | "Average" | "Needs Improvement";
+}
+
+interface PeopleData {
+  success: boolean;
+  studentPerformance: StudentPerformance[];
+  roster: any[];
+  shareableLink: string;
+  studentCode?: string;
+  teamMembers: any[];
+  mainTeacher: { id: string; name: string; email: string };
+  coTeachers: Array<{ id: string; name: string; email: string }>;
+  isMainTeacher?: boolean;
+}
+
+// Helper function to get initials from name
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "U";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Helper function to get avatar color based on name
+function getAvatarColor(name: string): string {
+  const colors = [
+    "bg-red-600",
+    "bg-orange-600",
+    "bg-amber-600",
+    "bg-blue-600",
+    "bg-purple-600",
+    "bg-green-600",
+    "bg-teal-600",
+    "bg-pink-600",
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+}
+
+// Helper function to get status badge variant
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "Excellent":
+      return "bg-green-100 text-green-700 hover:bg-green-100";
+    case "Good":
+      return "bg-blue-100 text-blue-700 hover:bg-blue-100";
+    case "Average":
+      return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100";
+    default:
+      return "bg-gray-100 text-gray-700 hover:bg-gray-100";
+  }
+}
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -19,6 +93,20 @@ export default function TeacherDashboardPage() {
   const { data: assignments = [] } = useAssignments();
   const { data: students = [] } = useStudents();
   const { data: schedules = [] } = useSchedules();
+  
+  const { data: peopleData, isLoading: isLoadingPeople } = useQuery<PeopleData>({
+    queryKey: ["teacher", "people", selectedCourseId],
+    queryFn: async () => {
+      if (!selectedCourseId) {
+        throw new Error("Course ID is required");
+      }
+      const response = await api.get<PeopleData>(
+        `/teacher/people?courseId=${selectedCourseId}`
+      );
+      return response.data;
+    },
+    enabled: !!selectedCourseId,
+  });
 
   const upcomingSchedules = schedules.filter(
     (schedule) => new Date(schedule.time) >= new Date()
@@ -57,12 +145,9 @@ export default function TeacherDashboardPage() {
     return (
       <div className="space-y-8">
         {/* Welcome Header Skeleton */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-5 w-96" />
-          </div>
-          <Skeleton className="h-10 w-40" />
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-96" />
         </div>
 
         {/* Summary Cards Skeleton */}
@@ -112,23 +197,13 @@ export default function TeacherDashboardPage() {
   return (
     <div className="space-y-8">
         {/* Welcome Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Welcome back!
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {selectedCourse.name} Dashboard
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/teacher/lobby")}
-            className="flex items-center gap-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            Change Course
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back!
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {selectedCourse.name} Dashboard
+          </p>
         </div>
 
         {/* Summary Cards */}
@@ -251,6 +326,98 @@ export default function TeacherDashboardPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">No upcoming classes</p>
               )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Class Performance Section */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold">Class Performance</h2>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Avg. Grade</TableHead>
+                    <TableHead>Assignments Completed</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingPeople ? (
+                    <>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-10 w-10 rounded-full" />
+                              <Skeleton className="h-4 w-32" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-12" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24 rounded-full" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  ) : peopleData?.studentPerformance && peopleData.studentPerformance.length > 0 ? (
+                    peopleData.studentPerformance.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar
+                              className={`h-10 w-10 ${getAvatarColor(student.name)}`}
+                            >
+                              <AvatarFallback
+                                className={`${getAvatarColor(student.name)} text-white`}
+                              >
+                                {getInitials(student.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{student.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold">
+                            {student.averageGrade}%
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground">
+                            {student.completedAssignments}/{student.totalAssignments}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={getStatusBadge(student.status)}
+                            variant="outline"
+                          >
+                            {student.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          No student performance data available yet.
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>

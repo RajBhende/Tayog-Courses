@@ -131,6 +131,9 @@ export async function GET(request: NextRequest) {
 
     // Generate teacher code (using course name prefix + course ID)
     const teacherCode = `TEACH-${course.name.substring(0, 4).toUpperCase()}-${courseId.slice(0, 4).toUpperCase()}`;
+    
+    // Generate student course code (using course name prefix + course ID)
+    const studentCode = `STUD-${course.name.substring(0, 4).toUpperCase()}-${courseId.slice(0, 4).toUpperCase()}`;
 
     // Get all team members (main teacher + co-teachers)
     const teamMembers = [
@@ -156,6 +159,7 @@ export async function GET(request: NextRequest) {
       roster,
       shareableLink,
       teacherCode,
+      studentCode,
       teamMembers,
       mainTeacher: course.teacher,
       coTeachers: course.coTeachers,

@@ -3,17 +3,12 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/getSession";
 import { z } from "zod";
 
-const addCoTeacherSchema = z.object({
-  teacherCode: z.string().min(1, "Teacher code is required"),
-  courseId: z.string().min(1, "Course ID is required"),
-});
-
 const inviteCoTeacherSchema = z.object({
   email: z.string().email("Invalid email address"),
   courseId: z.string().min(1, "Course ID is required"),
 });
 
-// PUT - Invite co-teacher by email (main teacher only)
+// PUT - Invite co-teacher by email (main teacher or co-teacher)
 export async function PUT(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -28,11 +23,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const validatedData = inviteCoTeacherSchema.parse(body);
 
-    // Check if user is the main teacher of the course
+    // Check if user is the main teacher or co-teacher of the course
     const course = await prisma.course.findFirst({
       where: {
         id: validatedData.courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
       include: {
         coTeachers: {
@@ -130,112 +128,6 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// POST - Add co-teacher using teacher code (self-join)
-export async function POST(request: NextRequest) {
-  try {
-    const user = await getCurrentUser();
-
-    if (!user || user.role !== "TEACHER") {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const validatedData = addCoTeacherSchema.parse(body);
-
-    // Extract course ID from teacher code
-    // Format: TEACH-XXXX-YYYY where YYYY is first 4 chars of courseId
-    const codeParts = validatedData.teacherCode.split("-");
-    if (codeParts.length !== 3 || codeParts[0] !== "TEACH") {
-      return NextResponse.json(
-        { success: false, error: "Invalid teacher code format" },
-        { status: 400 }
-      );
-    }
-
-    // Find course by matching the code pattern
-    // We'll search for courses and match the generated code
-    const allCourses = await prisma.course.findMany({
-      include: {
-        teacher: true,
-        coTeachers: true,
-      },
-    });
-
-    const matchedCourse = allCourses.find((course: (typeof allCourses)[number]) => {
-            const expectedCode = `TEACH-${course.name.substring(0, 4).toUpperCase()}-${course.id.slice(0, 4).toUpperCase()}`;
-      return expectedCode === validatedData.teacherCode;
-    });
-
-    if (!matchedCourse) {
-      return NextResponse.json(
-        { success: false, error: "Invalid teacher code" },
-        { status: 404 }
-      );
-    }
-
-    // Check if user is already a co-teacher
-    const isAlreadyCoTeacher = matchedCourse.coTeachers?.some(
-      (ct: { id: string }) => ct.id === user.id
-    ) || false;
-
-    if (isAlreadyCoTeacher) {
-      return NextResponse.json(
-        { success: false, error: "You are already a co-teacher of this course" },
-        { status: 400 }
-      );
-    }
-
-    // Check if user is the main teacher
-    if (matchedCourse.teacherId === user.id) {
-      return NextResponse.json(
-        { success: false, error: "You are already the main teacher of this course" },
-        { status: 400 }
-      );
-    }
-
-    // Add user as co-teacher
-    await prisma.course.update({
-      where: { id: matchedCourse.id },
-      data: {
-        coTeachers: {
-          connect: { id: user.id },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Successfully added as co-teacher",
-      course: {
-        id: matchedCourse.id,
-        name: matchedCourse.name,
-      },
-    });
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: error.issues[0]?.message || "Validation error" },
-        { status: 400 }
-      );
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
 // DELETE - Remove co-teacher
 export async function DELETE(request: NextRequest) {
   try {
@@ -259,11 +151,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if user is the main teacher of the course
+    // Check if user is the main teacher or co-teacher of the course
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
-        teacherId: user.id,
+        OR: [
+          { teacherId: user.id },
+          { coTeachers: { some: { id: user.id } } },
+        ],
       },
     });
 

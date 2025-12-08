@@ -14,7 +14,8 @@ export function useRemoveStudent() {
       await api.delete(`/teacher/students/${studentId}?courseId=${selectedCourseId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'students', selectedCourseId] });
+      queryClient.invalidateQueries({ queryKey: ['teacher', 'people', selectedCourseId] });
     },
   });
 }

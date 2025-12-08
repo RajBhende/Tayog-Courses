@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SearchBar } from "@/components/ui/SearchBar";
+import { Button } from "@/components/ui/button";
+import { BookOpen } from "lucide-react";
 import { AppSidebar } from "@/components/ui/TeacherSidebar";
 import { useCourseStore } from "@/lib/courseStore";
 import { useRouter } from "next/navigation";
@@ -41,7 +42,14 @@ export default function TeacherLayout({
           <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="ml-auto flex items-center gap-4">
-              <SearchBar />
+              <Button
+                variant="outline"
+                onClick={() => router.push("/teacher/lobby")}
+                className="flex items-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Change Course
+              </Button>
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
