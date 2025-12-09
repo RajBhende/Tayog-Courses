@@ -37,7 +37,6 @@ export function CreateCourseDialog({
     defaultValues: {
       name: "",
       description: "",
-      thumbnail: "",
     },
   });
 
@@ -103,21 +102,6 @@ export function CreateCourseDialog({
             {form.formState.errors.description && (
               <p className="text-sm text-red-600">
                 {form.formState.errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="thumbnail">Thumbnail URL (Optional)</Label>
-            <Input
-              id="thumbnail"
-              type="url"
-              {...form.register("thumbnail")}
-              placeholder="https://example.com/image.jpg"
-            />
-            {form.formState.errors.thumbnail && (
-              <p className="text-sm text-red-600">
-                {form.formState.errors.thumbnail.message}
               </p>
             )}
           </div>

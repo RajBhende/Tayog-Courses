@@ -10,11 +10,6 @@ export const createCourseSchema = z.object({
     .min(10, "Description must be at least 10 characters.")
     .max(500, "Description must be at most 500 characters.")
     .optional(),
-  thumbnail: z
-    .string()
-    .url("Thumbnail must be a valid URL.")
-    .optional()
-    .or(z.literal("")),
 });
 
 export type CreateCourseFormValues = z.infer<typeof createCourseSchema>;

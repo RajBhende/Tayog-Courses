@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Plus, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 import { useCourseStore } from "@/lib/courseStore";
 import { CreateCourseDialog } from "@/components/teacher/CreateCourseDialog";
@@ -34,7 +33,6 @@ export default function TeacherDashboardPage() {
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
-  const [teacherCode, setTeacherCode] = React.useState("");
 
   // Authentication check
   React.useEffect(() => {
@@ -69,18 +67,6 @@ export default function TeacherDashboardPage() {
     },
   });
 
-  const joinCourseMutation = useMutation({
-    mutationFn: async (code: string) => {
-      // TODO: Implement join course API endpoint
-      const response = await api.post("/teacher/courses/join", { code });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacher", "courses"] });
-      setTeacherCode("");
-    },
-  });
-
   const handleCourseSelect = (course: CourseWithCount) => {
     setSelectedCourseId(course.id);
     setSelectedCourse(course, "TEACHER");
@@ -89,12 +75,6 @@ export default function TeacherDashboardPage() {
 
   const handleCourseCreated = (course: Course) => {
     handleCourseSelect(course as CourseWithCount);
-  };
-
-  const handleJoinCourse = () => {
-    if (teacherCode.trim()) {
-      joinCourseMutation.mutate(teacherCode.trim());
-    }
   };
 
   const handleLogout = async () => {
@@ -161,27 +141,6 @@ export default function TeacherDashboardPage() {
               <p className="text-sm sm:text-base text-gray-600 mt-1">Select a course to manage or view.</p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Enter Teacher Code"
-                  value={teacherCode}
-                  onChange={(e) => setTeacherCode(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleJoinCourse();
-                    }
-                  }}
-                  className="w-full sm:w-48"
-                />
-                <Button
-                  onClick={handleJoinCourse}
-                  disabled={!teacherCode.trim() || joinCourseMutation.isPending}
-                  variant="outline"
-                  className="bg-gray-200 hover:bg-gray-300 whitespace-nowrap"
-                >
-                  {joinCourseMutation.isPending ? "Joining..." : "Join"}
-                </Button>
-              </div>
               <Button
                 onClick={() => setCreateDialogOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto"

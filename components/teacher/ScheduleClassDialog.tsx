@@ -26,7 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { TimePicker } from "@/components/ui/time-picker";
+import TimeSelect from "@/components/ui/time-select";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +48,46 @@ export function ScheduleClassDialog({
 
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = React.useState<string>("");
+  const [selectedTimeDisplay, setSelectedTimeDisplay] = React.useState<string>("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Convert 12-hour format (e.g., "12:00 PM") to 24-hour format (e.g., "12:00")
+  const convertTo24Hour = (time12h: string): string => {
+    if (!time12h) return "";
+    const [time, period] = time12h.split(" ");
+    if (!time || !period) return "";
+    
+    const [hours, minutes] = time.split(":");
+    let hour24 = parseInt(hours, 10);
+    
+    if (period === "PM" && hour24 !== 12) {
+      hour24 += 12;
+    } else if (period === "AM" && hour24 === 12) {
+      hour24 = 0;
+    }
+    
+    return `${hour24.toString().padStart(2, "0")}:${minutes}`;
+  };
+
+  // Convert 24-hour format (e.g., "12:00") to 12-hour format (e.g., "12:00 PM")
+  const convertTo12Hour = (time24h: string): string => {
+    if (!time24h) return "";
+    const [hours, minutes] = time24h.split(":");
+    if (!hours || !minutes) return "";
+    
+    let hour24 = parseInt(hours, 10);
+    const ampm = hour24 >= 12 ? "PM" : "AM";
+    const displayHour = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  // Handle time selection from TimeSelect
+  const handleTimeChange = (time12h: string) => {
+    setSelectedTimeDisplay(time12h);
+    const time24h = convertTo24Hour(time12h);
+    setSelectedTime(time24h);
+  };
 
   const form = useForm<ScheduleClassFormValues>({
     resolver: zodResolver(scheduleClassSchema),
@@ -70,8 +110,17 @@ export function ScheduleClassDialog({
     }
   }, [selectedDate, selectedTime, form]);
 
+  // Initialize display time when selectedTime changes from external source
+  React.useEffect(() => {
+    if (selectedTime && !selectedTimeDisplay) {
+      setSelectedTimeDisplay(convertTo12Hour(selectedTime));
+    }
+  }, [selectedTime]);
+
   // Watch form values to enable/disable submit button
   const watchedValues = form.watch();
+  const formErrors = form.formState.errors;
+  
   const isFormValid =
     watchedValues.subject?.trim().length >= 2 &&
     selectedDate !== undefined &&
@@ -80,14 +129,38 @@ export function ScheduleClassDialog({
     watchedValues.meetingLink?.trim().length > 0 &&
     watchedValues.meetingLink?.toLowerCase().startsWith("https://");
 
+  // Debug form state
+  React.useEffect(() => {
+    if (Object.keys(formErrors).length > 0) {
+      console.log("Form errors:", formErrors);
+    }
+    console.log("Form validity:", {
+      isFormValid,
+      subject: watchedValues.subject?.trim().length,
+      selectedDate: !!selectedDate,
+      selectedTime: selectedTime?.trim().length,
+      topic: watchedValues.topic?.trim().length,
+      meetingLink: watchedValues.meetingLink?.trim().length,
+      meetingLinkValid: watchedValues.meetingLink?.toLowerCase().startsWith("https://"),
+    });
+  }, [isFormValid, formErrors, watchedValues, selectedDate, selectedTime]);
+
   const onSubmit = async (values: ScheduleClassFormValues) => {
+    setError(null);
+    
     if (!selectedDate || !selectedTime) {
+      setError("Please select both date and time");
       return;
     }
 
     // Combine date and time into "YYYY-MM-DD HH:MM" format
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     const combinedDateTime = `${dateStr} ${selectedTime}`;
+
+    console.log("Submitting schedule:", {
+      ...values,
+      time: combinedDateTime,
+    });
 
     createSchedule(
       {
@@ -96,13 +169,26 @@ export function ScheduleClassDialog({
       },
       {
         onSuccess: () => {
+          console.log("Schedule created successfully");
           onOpenChange(false);
           form.reset();
           setSelectedDate(undefined);
           setSelectedTime("");
+          setSelectedTimeDisplay("");
+          setError(null);
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
           console.error("Error scheduling class:", error);
+          let errorMessage = "Failed to schedule class. Please try again.";
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null && 'response' in error) {
+            const axiosError = error as { response?: { data?: { error?: string; details?: string } } };
+            errorMessage = axiosError.response?.data?.error || axiosError.response?.data?.details || errorMessage;
+          }
+          
+          setError(errorMessage);
         },
       }
     );
@@ -116,6 +202,8 @@ export function ScheduleClassDialog({
         form.reset();
         setSelectedDate(undefined);
         setSelectedTime("");
+        setSelectedTimeDisplay("");
+        setError(null);
       }
     }
   };
@@ -185,15 +273,14 @@ export function ScheduleClassDialog({
               </FormItem>
 
               <FormItem>
-                <FormLabel className="text-sm font-semibold uppercase tracking-wide">
-                  Time
-                </FormLabel>
                 <FormControl>
-                  <TimePicker
-                    value={selectedTime}
-                    onChange={setSelectedTime}
+                  <TimeSelect
+                    value={selectedTimeDisplay}
+                    onValueChange={handleTimeChange}
                     disabled={isLoading}
                     placeholder="Select time"
+                    label="Time"
+                    required
                   />
                 </FormControl>
               </FormItem>
@@ -203,10 +290,11 @@ export function ScheduleClassDialog({
             <FormField
               control={form.control}
               name="time"
-              render={() => (
+              render={({ field }) => (
                 <FormItem className="hidden">
                   <FormControl>
                     <Input
+                      {...field}
                       value={
                         selectedDate && selectedTime
                           ? `${format(selectedDate, "yyyy-MM-dd")} ${selectedTime}`
@@ -219,6 +307,20 @@ export function ScheduleClassDialog({
                 </FormItem>
               )}
             />
+            
+            {/* Show time validation error if exists */}
+            {form.formState.errors.time && (
+              <div className="text-sm text-destructive">
+                {form.formState.errors.time.message}
+              </div>
+            )}
+            
+            {/* Show general error message */}
+            {error && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
+                <p className="text-sm text-destructive font-medium">{error}</p>
+              </div>
+            )}
 
             {/* Topic and Meeting Link Row */}
             <div className="grid grid-cols-2 gap-4">
@@ -274,6 +376,7 @@ export function ScheduleClassDialog({
                   form.reset();
                   setSelectedDate(undefined);
                   setSelectedTime("");
+                  setSelectedTimeDisplay("");
                 }}
               >
                 Cancel
@@ -282,6 +385,14 @@ export function ScheduleClassDialog({
                 type="submit"
                 disabled={isLoading || !isFormValid}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                onClick={(e) => {
+                  if (!isFormValid) {
+                    e.preventDefault();
+                    console.log("Form is not valid, preventing submission");
+                    form.trigger(); // Trigger validation to show errors
+                    return;
+                  }
+                }}
               >
                 {isLoading ? (
                   <>

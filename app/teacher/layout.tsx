@@ -19,7 +19,7 @@ export default function TeacherLayout({
   const isLoginPage = pathname === "/teacher/login" || pathname === "/teacher/signup";
   const isCoursesPage = pathname === "/teacher/courses";
   const isLobbyPage = pathname === "/teacher/lobby";
-  const { selectedCourseId, role } = useCourseStore();
+  const { selectedCourseId, selectedCourse, role } = useCourseStore();
 
   useEffect(() => {
     if (!isLoginPage && !isCoursesPage && !isLobbyPage && !selectedCourseId) {
@@ -42,6 +42,14 @@ export default function TeacherLayout({
           <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="ml-auto flex items-center gap-4">
+              {selectedCourse?.name && (
+                <div className="hidden sm:flex flex-col text-right">
+                  <span className="text-xs text-gray-500">Current course</span>
+                  <span className="font-semibold text-gray-900 truncate max-w-[220px]" title={selectedCourse.name}>
+                    {selectedCourse.name}
+                  </span>
+                </div>
+              )}
               <Button
                 variant="outline"
                 onClick={() => router.push("/teacher/lobby")}
