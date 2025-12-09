@@ -19,9 +19,11 @@ export interface CreateScheduleInput {
 
 export interface ScheduleResponse {
   success: boolean;
-  id: string;
-  subject: string;
-  topic: string;
-  time: string;
-  meetingLink: string;
+  id?: string;
+  subject?: string;
+  topic?: string;
+  time?: string;
+  meetingLink?: string;
+  error?: string;
+  details?: string;
 }
